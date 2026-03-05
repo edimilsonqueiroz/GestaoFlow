@@ -1,0 +1,63 @@
+# ─── Systemd service — TaskFlow v2 ───────────────────────────────────────────
+# Copie para: /etc/systemd/system/taskmanager.service
+# Ative com:
+#   systemctl daemon-reload
+#   systemctl enable taskmanager
+#   systemctl start taskmanager
+# Verifique:
+#   systemctl status taskmanager
+#   journalctl -u taskmanager -f
+
+[Unit]
+Description=TaskFlow v2 — Flask + Gunicorn
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/taskmanager
+EnvironmentFile=/var/www/taskmanager/.env
+ExecStart=/var/www/taskmanager/venv/bin/gunicorn -c gunicorn.conf.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+# ─── Systemd service — TaskFlow v2 ───────────────────────────────────────────
+# Copie para: /etc/systemd/system/taskmanager.service
+# Ative com:
+#   systemctl daemon-reload
+#   systemctl enable taskmanager
+#   systemctl start taskmanager
+# Verifique:
+#   systemctl status taskmanager
+#   journalctl -u taskmanager -f
+
+[Unit]
+Description=TaskFlow v2 — Flask + Gunicorn
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/taskmanager
+EnvironmentFile=/var/www/taskmanager/.env
+ExecStart=/var/www/taskmanager/venv/bin/gunicorn -c gunicorn.conf.py wsgi:app
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/var/www/taskmanager /var/log/taskmanager
+
+[Install]
+WantedBy=multi-user.target

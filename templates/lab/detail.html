@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}{{ lab.name }} · Reservar · TaskFlow{% endblock %}
+{% block page_title %}{{ lab.name }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('lab.index') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+{# ── Header do laboratório ── #}
+<div class="card mb-4">
+  <div class="card-body" style="padding:20px 24px">
+    <div class="flex items-center gap-4 flex-wrap">
+      {% if lab.photo %}
+        <div class="equip-detail-photo">
+          <img src="{{ url_for('static', filename=lab.photo) }}" alt="{{ lab.name }}">
+        </div>
+      {% else %}
+        <div class="lab-card-icon" style="width:52px;height:52px;font-size:22px">
+          <i class="fas fa-flask" style="color:#fff"></i>
+        </div>
+      {% endif %}
+      <div style="flex:1;min-width:0">
+        <div style="font-family:var(--font-display);font-size:20px;font-weight:800">{{ lab.name }}</div>
+        <div class="text-muted fs-13 mt-1 flex gap-3 flex-wrap">
+          {% if lab.location %}
+            <span><i class="fas fa-map-marker-alt" style="margin-right:4px"></i>{{ lab.location }}</span>
+          {% endif %}
+          {% if lab.capacity %}
+            <span><i class="fas fa-chair" style="margin-right:4px"></i>{{ lab.capacity }} lugares</span>
+          {% endif %}
+          {% if lab.description %}
+            <span>{{ lab.description }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ── Sem horários ── #}
+{% if no_slots %}
+<div class="empty-state">
+  <div class="empty-state-icon"><i class="fas fa-clock"></i></div>
+  <h3>Nenhum horário disponível</h3>
+  <p>O administrador ainda não cadastrou horários para reserva.</p>
+</div>
+
+{% else %}
+
+{# ── Navegação de semana ── #}
+<div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('lab.detail', lab_id=lab.id, week=prev_week) }}" class="btn btn-secondary btn-sm btn-icon">
+      <i class="fas fa-chevron-left"></i>
+    </a>
+    <span class="fw-600 fs-14">
+      {{ day_data[0].date.strftime('%d/%m') }} — {{ day_data[4].date.strftime('%d/%m/%Y') }}
+    </span>
+    <a href="{{ url_for('lab.detail', lab_id=lab.id, week=next_week) }}" class="btn btn-secondary btn-sm btn-icon">
+      <i class="fas fa-chevron-right"></i>
+    </a>
+  </div>
+  <a href="{{ url_for('lab.detail', lab_id=lab.id) }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-calendar-day"></i> Semana atual
+  </a>
+</div>
+
+{# ── Card por dia ── #}
+{% for day in day_data %}
+<div class="card mb-3 {{ 'today-card' if day.is_today else '' }}">
+
+  <div class="card-header" style="padding:14px 20px">
+    <div class="flex items-center gap-3 flex-wrap">
+      {% if day.is_today %}
+        <span class="badge badge-active" style="font-size:11px">Hoje</span>
+      {% endif %}
+      <span class="fw-700 fs-14">
+        {{ ['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira'][day.date.weekday()] }}
+      </span>
+      <span class="text-muted fs-13">{{ day.date.strftime('%d/%m/%Y') }}</span>
+    </div>
+    {% if day.is_past %}
+      <span class="text-muted fs-12"><i class="fas fa-lock fs-11"></i> Passado</span>
+    {% elif day.is_weekend %}
+      <span class="text-muted fs-12"><i class="fas fa-coffee fs-11"></i> Fim de semana</span>
+    {% elif day.free_count > 0 %}
+      <span class="text-green fs-12 fw-600">
+        <i class="fas fa-check-circle fs-11"></i>
+        {{ day.free_count }} horário{{ 's' if day.free_count != 1 }} livre{{ 's' if day.free_count != 1 }}
+      </span>
+    {% else %}
+      <span class="text-red fs-12 fw-600">
+        <i class="fas fa-times-circle fs-11"></i> Todos os horários reservados
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="slots-grid">
+    {% for item in day.slots_status %}
+    <div class="slot-card {{ item.state }}
+                {{ 'my-slot' if item.state == 'occupied' and item.owner and item.owner.id == current_user.id else '' }}">
+
+      <div class="slot-card-time">{{ item.slot.time_range }}</div>
+      <div class="slot-card-desc fw-600">{{ item.slot.description }}</div>
+      <div class="slot-card-dur text-muted fs-11">{{ item.slot.duration_minutes }} min</div>
+
+      {% if item.state == 'free' and not day.is_past and not day.is_weekend %}
+        <button class="slot-select-btn"
+                onclick="toggleSlot({{ item.slot.id }}, '{{ item.slot.description }}', '{{ item.slot.time_range }}', '{{ day.date.isoformat() }}', '{{ day.date.strftime('%d/%m/%Y') }}', {{ lab.id }}, '{{ week_ref }}')"
+                id="slot-btn-{{ day.date.isoformat() }}-{{ item.slot.id }}">
+          <i class="fas fa-plus fs-11"></i> Selecionar
+        </button>
+      {% elif item.state == 'past_today' %}
+        <div class="slot-unavailable"><i class="fas fa-clock fs-10"></i> Horário encerrado</div>
+      {% elif item.state == 'occupied' %}
+        <div class="slot-occupied-by">
+          <i class="fas fa-user fs-10"></i>
+          {% if item.owner and item.owner.id == current_user.id %}
+            Minha reserva
+            {% for res in day.my_reservations %}
+              {% if item.slot in res.slots %}
+              <form method="POST" action="{{ url_for('lab.cancel_reservation', res_id=res.id) }}"
+                    data-confirm="Cancelar sua reserva de '{{ item.slot.description }}'?"
+                    style="display:inline;margin-left:4px">
+                <input type="hidden" name="next" value="{{ request.url }}">
+                <button type="submit" class="equip-cancel-btn" title="Cancelar">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+              {% endif %}
+            {% endfor %}
+          {% else %}
+            {{ item.owner.first_name if item.owner else 'Reservado' }}
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="slot-unavailable"><i class="fas fa-ban fs-10"></i> Indisponível</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="slots-confirm-bar" id="confirm-bar-{{ day.date.isoformat() }}" style="display:none">
+    <div class="flex items-center gap-3 flex-wrap">
+      <span class="fs-13 fw-600" id="selected-label-{{ day.date.isoformat() }}"></span>
+      <button class="btn btn-primary btn-sm"
+              onclick="openReserveModal('{{ day.date.isoformat() }}', '{{ day.date.strftime('%d/%m/%Y') }}', {{ lab.id }}, '{{ week_ref }}')">
+        <i class="fas fa-check"></i> Reservar selecionados
+      </button>
+      <button class="btn btn-secondary btn-sm" onclick="clearSelection('{{ day.date.isoformat() }}')">
+        <i class="fas fa-times"></i> Limpar
+      </button>
+    </div>
+  </div>
+
+</div>
+{% endfor %}
+
+{# ── Minhas reservas futuras neste lab ── #}
+{% if my_upcoming %}
+<div class="card mt-4">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-calendar-check text-accent" style="margin-right:8px"></i>
+      Minhas reservas — {{ lab.name }}
+    </span>
+  </div>
+  <div class="dash-list">
+    {% for res in my_upcoming %}
+    <div class="dash-list-item">
+      <div class="dash-list-left">
+        <div style="flex-shrink:0;text-align:center;min-width:60px">
+          <div class="fw-700 fs-13">{{ res.start_time.strftime('%H:%M') }}</div>
+          <div class="text-muted fs-11">{{ res.end_time.strftime('%H:%M') }}</div>
+        </div>
+        <div class="dash-list-info">
+          <div class="fw-600 fs-13">{{ res.weekday_label }}, {{ res.date.strftime('%d/%m/%Y') }}</div>
+          <div class="text-muted fs-12">{{ res.slots_label }}</div>
+          {% if res.notes %}<div class="text-muted fs-12 mt-1">{{ res.notes }}</div>{% endif %}
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('lab.cancel_reservation', res_id=res.id) }}"
+            data-confirm="Cancelar esta reserva?">
+        <input type="hidden" name="next" value="{{ request.url }}">
+        <button type="submit" class="btn btn-danger btn-sm btn-icon"><i class="fas fa-times"></i></button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endif %}{# end no_slots #}
+
+{# ── Modal de confirmação ── #}
+<div class="modal-backdrop" id="reserveBackdrop" onclick="closeReserveModal()"></div>
+<div class="modal-box" id="reserveModal">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title" id="modalTitle">Confirmar Reserva</div>
+      <div class="text-muted fs-12 mt-1" id="modalSubtitle"></div>
+    </div>
+    <button class="modal-close" onclick="closeReserveModal()"><i class="fas fa-times"></i></button>
+  </div>
+  <form method="POST" action="{{ url_for('lab.reserve') }}" id="reserveForm">
+    <div class="modal-body">
+      <input type="hidden" name="lab_id"   id="modalLabId">
+      <input type="hidden" name="date"     id="modalDate">
+      <input type="hidden" name="week_ref" id="modalWeekRef">
+      <div id="modalSlotInputs"></div>
+      <div class="slot-summary-box" id="slotSummaryBox"></div>
+      <div class="form-group mt-3">
+        <label for="modalNotes">Observação <span class="hint">(opcional)</span></label>
+        <input type="text" id="modalNotes" name="notes"
+               placeholder="Ex: aula de redes, turma B, prof. Silva..." maxlength="200">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeReserveModal()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-check"></i> Confirmar Reserva
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+var selections = {};
+
+function toggleSlot(slotId, slotDesc, slotRange, dateIso, dateFmt, labId, weekRef) {
+  if (!selections[dateIso]) selections[dateIso] = [];
+  var list = selections[dateIso];
+  var idx  = list.findIndex(function(s) { return s.id === slotId; });
+  var btn  = document.getElementById('slot-btn-' + dateIso + '-' + slotId);
+  if (idx >= 0) {
+    list.splice(idx, 1);
+    btn.innerHTML = '<i class="fas fa-plus fs-11"></i> Selecionar';
+    btn.classList.remove('selected');
+    btn.closest('.slot-card').classList.remove('selecting');
+  } else {
+    list.push({ id: slotId, desc: slotDesc, range: slotRange });
+    btn.innerHTML = '<i class="fas fa-check fs-11"></i> Selecionado';
+    btn.classList.add('selected');
+    btn.closest('.slot-card').classList.add('selecting');
+  }
+  updateConfirmBar(dateIso, dateFmt, labId, weekRef);
+}
+
+function updateConfirmBar(dateIso, dateFmt, labId, weekRef) {
+  var bar   = document.getElementById('confirm-bar-' + dateIso);
+  var label = document.getElementById('selected-label-' + dateIso);
+  var list  = selections[dateIso] || [];
+  if (list.length === 0) {
+    bar.style.display = 'none';
+  } else {
+    bar.style.display = 'block';
+    label.textContent = list.length + ' horário' + (list.length > 1 ? 's' : '') + ' selecionado' + (list.length > 1 ? 's' : '');
+  }
+}
+
+function clearSelection(dateIso) {
+  var list = selections[dateIso] || [];
+  list.forEach(function(s) {
+    var btn = document.getElementById('slot-btn-' + dateIso + '-' + s.id);
+    if (btn) {
+      btn.innerHTML = '<i class="fas fa-plus fs-11"></i> Selecionar';
+      btn.classList.remove('selected');
+      btn.closest('.slot-card').classList.remove('selecting');
+    }
+  });
+  selections[dateIso] = [];
+  document.getElementById('confirm-bar-' + dateIso).style.display = 'none';
+}
+
+function openReserveModal(dateIso, dateFmt, labId, weekRef) {
+  var list = selections[dateIso] || [];
+  if (list.length === 0) return;
+  list.sort(function(a, b) { return a.range.localeCompare(b.range); });
+
+  document.getElementById('modalTitle').textContent    = 'Confirmar Reserva — {{ lab.name }}';
+  document.getElementById('modalSubtitle').textContent = dateFmt + ' · ' + list.length + ' horário' + (list.length > 1 ? 's' : '');
+  document.getElementById('modalLabId').value   = labId;
+  document.getElementById('modalDate').value    = dateIso;
+  document.getElementById('modalWeekRef').value = weekRef;
+
+  var container = document.getElementById('modalSlotInputs');
+  container.innerHTML = '';
+  list.forEach(function(s) {
+    var inp = document.createElement('input');
+    inp.type = 'hidden'; inp.name = 'slot_ids'; inp.value = s.id;
+    container.appendChild(inp);
+  });
+
+  var summary = document.getElementById('slotSummaryBox');
+  summary.innerHTML = list.map(function(s) {
+    return '<div class="slot-summary-item"><i class="fas fa-clock fs-11"></i> <strong>' + s.desc + '</strong> <span class="text-muted">' + s.range + '</span></div>';
+  }).join('');
+
+  document.getElementById('reserveModal').classList.add('open');
+  document.getElementById('reserveBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeReserveModal() {
+  document.getElementById('reserveModal').classList.remove('open');
+  document.getElementById('reserveBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+</script>
+{% endblock %}

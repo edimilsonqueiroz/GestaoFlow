@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if slot else 'Novo' }} Horário · TaskFlow{% endblock %}
+{% block page_title %}{{ 'Editar Horário' if slot else 'Novo Horário' }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('equipment.admin_slots_list') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="task-form-card card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-{{ 'pen' if slot else 'plus' }} text-accent" style="margin-right:8px"></i>
+      {{ 'Editando: ' ~ slot.description if slot else 'Cadastrar novo horário' }}
+    </span>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" id="slotForm">
+
+      <div class="user-form-section">
+        <div class="user-form-section-title">
+          <i class="fas fa-clock"></i> Dados do Horário
+        </div>
+
+        <div class="form-group">
+          <label for="description">Descrição <span class="required">*</span></label>
+          <div class="input-group">
+            <i class="fas fa-tag input-icon"></i>
+            <input type="text" id="description" name="description" required
+                   placeholder="Ex: Manhã, 1º Horário, Aula 1, Tarde..."
+                   maxlength="100"
+                   value="{{ slot.description if slot else '' }}">
+          </div>
+          <div class="form-hint">Nome que o usuário verá ao fazer a reserva.</div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="start_time">Horário de início <span class="required">*</span></label>
+            <div class="input-group">
+              <i class="fas fa-play input-icon" style="color:var(--green)"></i>
+              <input type="time" id="start_time" name="start_time" required
+                     value="{{ slot.start_time.strftime('%H:%M') if slot else '' }}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="end_time">Horário de fim <span class="required">*</span></label>
+            <div class="input-group">
+              <i class="fas fa-stop input-icon" style="color:var(--red)"></i>
+              <input type="time" id="end_time" name="end_time" required
+                     value="{{ slot.end_time.strftime('%H:%M') if slot else '' }}">
+            </div>
+          </div>
+        </div>
+
+        {# Preview de duração #}
+        <div class="slot-duration-preview" id="durationPreview" style="display:none">
+          <i class="fas fa-stopwatch"></i>
+          Duração: <strong id="durationText"></strong>
+        </div>
+
+        {% if slot %}
+        <div class="form-group mt-3">
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_active" {{ 'checked' if slot.is_active }}>
+            Horário ativo (disponível para reservas)
+          </label>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('equipment.admin_slots_list') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {{ 'Salvar Alterações' if slot else 'Cadastrar Horário' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateDuration() {
+  var s = document.getElementById('start_time').value;
+  var e = document.getElementById('end_time').value;
+  var preview = document.getElementById('durationPreview');
+  var text    = document.getElementById('durationText');
+  if (!s || !e) { preview.style.display = 'none'; return; }
+  var sm = parseInt(s.split(':')[0]) * 60 + parseInt(s.split(':')[1]);
+  var em = parseInt(e.split(':')[0]) * 60 + parseInt(e.split(':')[1]);
+  var diff = em - sm;
+  if (diff <= 0) { preview.style.display = 'none'; return; }
+  var h = Math.floor(diff / 60), m = diff % 60;
+  text.textContent = h > 0 ? h + 'h' + (m > 0 ? ' ' + m + 'min' : '') : m + ' min';
+  preview.style.display = 'flex';
+}
+document.getElementById('start_time').addEventListener('change', updateDuration);
+document.getElementById('end_time').addEventListener('change', updateDuration);
+updateDuration();
+</script>
+{% endblock %}

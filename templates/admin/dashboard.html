@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · GestãoFlow{% endblock %}
+{% block page_title %}Visão Geral{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('admin.create_task') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> Nova Tarefa
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stat cards -->
+<div class="stats-grid">
+  <div class="stat-card purple">
+    <div class="stat-icon purple"><i class="fas fa-users"></i></div>
+    <div class="stat-value">{{ stats.total_users }}</div>
+    <div class="stat-label">Usuários Cadastrados</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon blue"><i class="fas fa-clipboard-list"></i></div>
+    <div class="stat-value">{{ stats.total_tasks }}</div>
+    <div class="stat-label">Total de Tarefas</div>
+  </div>
+  <div class="stat-card yellow">
+    <div class="stat-icon yellow"><i class="fas fa-hourglass-half"></i></div>
+    <div class="stat-value">{{ stats.tasks_pending }}</div>
+    <div class="stat-label">Pendentes</div>
+  </div>
+  <div class="stat-card blue">
+    <div class="stat-icon blue"><i class="fas fa-spinner"></i></div>
+    <div class="stat-value">{{ stats.tasks_inprogress }}</div>
+    <div class="stat-label">Em Andamento</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green"><i class="fas fa-check-double"></i></div>
+    <div class="stat-value">{{ stats.tasks_done }}</div>
+    <div class="stat-label">Concluídas</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
+    <div class="stat-value">{{ stats.tasks_overdue }}</div>
+    <div class="stat-label">Atrasadas</div>
+  </div>
+</div>
+
+<!-- Global progress -->
+{% if stats.total_tasks > 0 %}
+{% set pct = ((stats.tasks_done / stats.total_tasks) * 100) | int %}
+<div class="card mb-4">
+  <div class="card-header">
+    <span class="card-title">Progresso Geral</span>
+    <span class="text-muted fs-13">{{ stats.tasks_done }} de {{ stats.total_tasks }} tarefas concluídas</span>
+  </div>
+  <div class="card-body">
+    <div class="progress-wrap progress-lg">
+      <div class="progress-fill" data-width="{{ pct }}" style="width:0"></div>
+    </div>
+    <div class="flex justify-between mt-2">
+      <span class="text-muted fs-12">0%</span>
+      <span class="text-accent fw-600 fs-13">{{ pct }}% completo</span>
+      <span class="text-muted fs-12">100%</span>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Two-column grid -->
+<div class="admin-two-col">
+
+  <!-- Recent tasks -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Tarefas Recentes</span>
+      <a href="{{ url_for('admin.tasks') }}" class="btn btn-secondary btn-sm">Ver todas</a>
+    </div>
+    {% if recent_tasks %}
+    <div class="dash-list">
+      {% for task in recent_tasks %}
+      <div class="dash-list-item {{ 'dash-overdue' if task.is_overdue else '' }}">
+        <div class="dash-list-left">
+          <div class="dash-priority-dot {{ task.priority }}"></div>
+          <div class="dash-list-info">
+            <div class="fw-600 fs-13">{{ task.title | truncate(28) }}</div>
+            <div class="text-muted fs-12">
+              {% if task.assignee %}{{ task.assignee.name | truncate(22) }}
+              {% else %}Não atribuída{% endif %}
+              {% if task.is_overdue %} · <span class="text-red">Atrasada</span>{% endif %}
+            </div>
+          </div>
+        </div>
+        <div class="dash-list-badges">
+          <span class="badge badge-{{ task.status }}">{{ task.status_label }}</span>
+          <span class="badge badge-{{ task.priority }} badge-prio-hide">{{ task.priority_label }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="table-empty">
+      <i class="fas fa-clipboard"></i>
+      <p>Nenhuma tarefa criada ainda</p>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Users overview -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Usuários</span>
+      <a href="{{ url_for('admin.users') }}" class="btn btn-secondary btn-sm">Gerenciar</a>
+    </div>
+    {% if users %}
+    <div class="dash-list">
+      {% for user in users[:8] %}
+      {% set s = user.task_stats() %}
+      <div class="dash-list-item">
+        <div class="dash-list-left">
+          <div class="user-avatar" style="width:32px;height:32px;font-size:12px;flex-shrink:0">{{ user.initials }}</div>
+          <div class="dash-list-info">
+            <div class="fw-600 fs-13">{{ user.name }}</div>
+            <div class="text-muted fs-12">{{ s.total }} tarefa{{ 's' if s.total != 1 else '' }} · {{ s.done }} concluída{{ 's' if s.done != 1 else '' }}</div>
+          </div>
+        </div>
+        <span class="badge badge-{{ 'active' if user.is_active_account else 'inactive' }}">
+          {{ 'Ativo' if user.is_active_account else 'Inativo' }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="table-empty">
+      <i class="fas fa-users"></i>
+      <p>Nenhum usuário cadastrado</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

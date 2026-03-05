@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Laboratórios · Admin · TaskFlow{% endblock %}
+{% block page_title %}Laboratórios{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('lab.admin_reservations') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-calendar-week"></i> <span class="btn-label">Reservas</span>
+  </a>
+  <a href="{{ url_for('lab.admin_create') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> <span class="btn-label">Novo Laboratório</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-flask text-accent" style="margin-right:8px"></i>
+      {{ labs | length }} laboratório{{ 's' if labs | length != 1 else '' }}
+    </span>
+  </div>
+
+  {% if labs %}
+
+  {# Desktop #}
+  <div class="users-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Laboratório</th>
+          <th>Localização</th>
+          <th>Capacidade</th>
+          <th>Reservas futuras</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lab in labs %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-3">
+              {% if lab.photo %}
+                <img src="{{ url_for('static', filename=lab.photo) }}"
+                     style="width:34px;height:34px;border-radius:8px;object-fit:cover;flex-shrink:0">
+              {% else %}
+                <div class="lab-icon-badge">
+                  <i class="fas fa-flask" style="color:#fff"></i>
+                </div>
+              {% endif %}
+              <div>
+                <div class="fw-600">{{ lab.name }}</div>
+                {% if lab.description %}<div class="text-muted fs-12">{{ lab.description }}</div>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td><span class="text-muted fs-13">{{ lab.location or '—' }}</span></td>
+          <td>
+            {% if lab.capacity %}
+              <span class="fs-13"><i class="fas fa-chair text-muted" style="margin-right:4px"></i>{{ lab.capacity }}</span>
+            {% else %}
+              <span class="text-muted fs-13">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="fw-600 {{ 'text-accent' if lab._upcoming else 'text-muted' }}">
+              {{ lab._upcoming }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {{ 'badge-active' if lab.is_active else 'badge-inactive' }}">
+              {{ 'Ativo' if lab.is_active else 'Inativo' }}
+            </span>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('lab.admin_edit', lab_id=lab.id) }}"
+                 class="btn btn-secondary btn-sm btn-icon" title="Editar">
+                <i class="fas fa-pen"></i>
+              </a>
+              <form method="POST" action="{{ url_for('lab.admin_delete', lab_id=lab.id) }}"
+                    data-confirm="Excluir '{{ lab.name }}'? Todas as reservas serão removidas.">
+                <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Excluir">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Mobile #}
+  <div class="users-card-list">
+    {% for lab in labs %}
+    <div class="user-mobile-card">
+      <div class="umc-header">
+        <div class="flex items-center gap-3" style="min-width:0">
+          {% if lab.photo %}
+            <img src="{{ url_for('static', filename=lab.photo) }}"
+                 style="width:36px;height:36px;border-radius:8px;object-fit:cover;flex-shrink:0">
+          {% else %}
+            <div class="lab-icon-badge">
+              <i class="fas fa-flask" style="color:#fff"></i>
+            </div>
+          {% endif %}
+          <div style="min-width:0">
+            <div class="fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ lab.name }}</div>
+            <div class="text-muted fs-12">{{ lab.location or lab.description or '—' }}</div>
+          </div>
+        </div>
+        <span class="badge {{ 'badge-active' if lab.is_active else 'badge-inactive' }}">
+          {{ 'Ativo' if lab.is_active else 'Inativo' }}
+        </span>
+      </div>
+      <div class="umc-stats mb-3">
+        <div class="umc-stat">
+          <span class="umc-stat-label">Capacidade</span>
+          <span class="umc-stat-value">{{ lab.capacity or '—' }}</span>
+        </div>
+        <div class="umc-stat">
+          <span class="umc-stat-label">Reservas futuras</span>
+          <span class="umc-stat-value {{ 'text-accent' if lab._upcoming else '' }}">{{ lab._upcoming }}</span>
+        </div>
+      </div>
+      <div class="umc-actions">
+        <a href="{{ url_for('lab.admin_edit', lab_id=lab.id) }}"
+           class="btn btn-secondary btn-sm" style="flex:1;justify-content:center">
+          <i class="fas fa-pen"></i> Editar
+        </a>
+        <form method="POST" action="{{ url_for('lab.admin_delete', lab_id=lab.id) }}"
+              data-confirm="Excluir '{{ lab.name }}'?">
+          <button type="submit" class="btn btn-danger btn-sm btn-icon">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="table-empty">
+    <i class="fas fa-flask"></i>
+    <p>Nenhum laboratório cadastrado ainda.</p>
+    <a href="{{ url_for('lab.admin_create') }}" class="btn btn-primary btn-sm mt-3">
+      <i class="fas fa-plus"></i> Cadastrar primeiro laboratório
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

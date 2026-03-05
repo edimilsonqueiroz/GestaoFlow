@@ -1,0 +1,25 @@
+# Ambiente
+.env
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Banco de dados
+*.db
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Uploads de usuários (fotos de equipamentos e labs)
+static/uploads/equipment/*
+static/uploads/labs/*
+# Mantém as pastas vazias no git via .gitkeep
+!static/uploads/equipment/.gitkeep
+!static/uploads/labs/.gitkeep

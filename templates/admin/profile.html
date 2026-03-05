@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Meu Perfil · TaskFlow{% endblock %}
+{% block page_title %}Meu Perfil{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="task-form-card card">
+  <div class="card-header">
+    <div class="flex items-center gap-3">
+      <div class="user-avatar lg">{{ current_user.initials }}</div>
+      <div>
+        <div class="card-title">{{ current_user.name }}</div>
+        <div class="text-muted fs-12 mt-1">
+          <span class="badge badge-urgent" style="font-size:11px">🛡️ Administrador</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <form method="POST">
+
+      <!-- ── Dados pessoais ── -->
+      <div class="user-form-section">
+        <div class="user-form-section-title">
+          <i class="fas fa-id-card"></i> Dados Pessoais
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nome completo <span class="required">*</span></label>
+            <div class="input-group">
+              <i class="fas fa-user input-icon"></i>
+              <input type="text" id="name" name="name" required
+                     placeholder="Seu nome completo"
+                     value="{{ user.name }}" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="email">E-mail <span class="required">*</span></label>
+            <div class="input-group">
+              <i class="fas fa-envelope input-icon"></i>
+              <input type="email" id="email" name="email" required
+                     placeholder="seu@email.com"
+                     value="{{ user.email }}" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Alterar senha ── -->
+      <div class="user-form-section">
+        <div class="user-form-section-title">
+          <i class="fas fa-lock"></i> Alterar Senha
+        </div>
+        <div class="password-reset-notice">
+          <i class="fas fa-info-circle"></i>
+          Deixe em branco para <strong>manter a senha atual</strong>.
+          Preencha apenas se quiser criar uma nova senha.
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="password">Nova senha</label>
+            <div class="input-group">
+              <i class="fas fa-lock input-icon"></i>
+              <input type="password" id="password" name="password"
+                     placeholder="Deixe em branco para manter" />
+              <button type="button" class="input-toggle"
+                      onclick="togglePassword('password','eye1')" aria-label="Mostrar senha">
+                <i class="fas fa-eye" id="eye1"></i>
+              </button>
+            </div>
+            <div class="form-hint">Mínimo 6 caracteres.</div>
+          </div>
+          <div class="form-group">
+            <label for="confirm_password">Confirmar nova senha</label>
+            <div class="input-group">
+              <i class="fas fa-lock input-icon"></i>
+              <input type="password" id="confirm_password" name="confirm_password"
+                     placeholder="Repita a nova senha" />
+              <button type="button" class="input-toggle"
+                      onclick="togglePassword('confirm_password','eye2')" aria-label="Mostrar senha">
+                <i class="fas fa-eye" id="eye2"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Informações da conta ── -->
+      <div class="user-form-section">
+        <div class="user-form-section-title">
+          <i class="fas fa-chart-bar"></i> Informações da Conta
+        </div>
+        {% set s = user.task_stats() %}
+        <div class="user-info-grid">
+          <div class="user-info-item">
+            <span class="user-info-label">ID</span>
+            <span class="user-info-value">#{{ user.id }}</span>
+          </div>
+          <div class="user-info-item">
+            <span class="user-info-label">Membro desde</span>
+            <span class="user-info-value">{{ user.created_at.strftime('%d/%m/%Y') }}</span>
+          </div>
+          <div class="user-info-item">
+            <span class="user-info-label">Perfil</span>
+            <span class="user-info-value text-accent">Administrador</span>
+          </div>
+          <div class="user-info-item">
+            <span class="user-info-label">Tarefas criadas</span>
+            <span class="user-info-value">{{ s.total }}</span>
+          </div>
+          <div class="user-info-item">
+            <span class="user-info-label">Concluídas</span>
+            <span class="user-info-value text-green">{{ s.done }}</span>
+          </div>
+          <div class="user-info-item">
+            <span class="user-info-label">Em andamento</span>
+            <span class="user-info-value text-blue">{{ s.in_progress }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> Salvar Alterações
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

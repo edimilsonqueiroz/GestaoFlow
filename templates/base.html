@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}TaskFlow{% endblock %}</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+  <!-- App styles -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+
+  {% block extra_styles %}{% endblock %}
+</head>
+<body>
+
+{% if current_user.is_authenticated %}
+<!-- ── Authenticated layout ───────────────────────────── -->
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">TaskFlow</div>
+      <div class="logo-sub">Gestão de Tarefas</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      {% if current_user.is_admin %}
+        <div class="nav-section-title">Painel</div>
+        <a href="{{ url_for('admin.dashboard') }}"
+           class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+          <i class="fas fa-chart-pie"></i> Visão Geral
+        </a>
+
+        <div class="nav-section-title">Gerenciar</div>
+        <a href="{{ url_for('admin.tasks') }}"
+           class="nav-link {% if request.endpoint in ['admin.tasks','admin.create_task','admin.edit_task'] %}active{% endif %}">
+          <i class="fas fa-tasks"></i> Tarefas
+        </a>
+        <a href="{{ url_for('admin.users') }}"
+           class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}">
+          <i class="fas fa-users"></i> Usuários
+        </a>
+        <a href="{{ url_for('equipment.admin_list') }}"
+           class="nav-link {% if request.endpoint in ['equipment.admin_list','equipment.admin_create','equipment.admin_edit'] %}active{% endif %}">
+          <i class="fas fa-box"></i> Equipamentos
+        </a>
+        <a href="{{ url_for('lab.admin_list') }}"
+           class="nav-link {% if request.endpoint in ['lab.admin_list','lab.admin_create','lab.admin_edit'] %}active{% endif %}">
+          <i class="fas fa-flask"></i> Laboratórios
+        </a>
+        <a href="{{ url_for('equipment.admin_slots_list') }}"
+           class="nav-link {% if request.endpoint in ['equipment.admin_slots_list','equipment.admin_slots_create','equipment.admin_slots_edit'] %}active{% endif %}">
+          <i class="fas fa-clock"></i> Horários
+        </a>
+        <a href="{{ url_for('equipment.admin_reservations') }}"
+           class="nav-link {% if request.endpoint == 'equipment.admin_reservations' %}active{% endif %}">
+          <i class="fas fa-calendar-week"></i> Reservas Equip.
+        </a>
+        <a href="{{ url_for('lab.admin_reservations') }}"
+           class="nav-link {% if request.endpoint == 'lab.admin_reservations' %}active{% endif %}">
+          <i class="fas fa-calendar-week"></i> Reservas Labs
+        </a>
+        <a href="{{ url_for('reports.index') }}"
+           class="nav-link {% if request.endpoint in ['reports.index','reports.reservations_pdf','reports.tasks_pdf'] %}active{% endif %}">
+          <i class="fas fa-file-pdf"></i> Relatórios
+        </a>
+
+      {% else %}
+        <div class="nav-section-title">Menu</div>
+        <a href="{{ url_for('user.dashboard') }}"
+           class="nav-link {% if request.endpoint == 'user.dashboard' %}active{% endif %}">
+          <i class="fas fa-home"></i> Meu Painel
+        </a>
+        <a href="{{ url_for('equipment.index') }}"
+           class="nav-link {% if request.endpoint in ['equipment.index'] %}active{% endif %}">
+          <i class="fas fa-box"></i> Equipamentos
+        </a>
+        <a href="{{ url_for('lab.index') }}"
+           class="nav-link {% if request.endpoint in ['lab.index','lab.detail'] %}active{% endif %}">
+          <i class="fas fa-flask"></i> Laboratórios
+        </a>
+      {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar">{{ current_user.initials }}</div>
+        <div class="user-info">
+          <div class="user-name">{{ current_user.first_name }}</div>
+          <div class="user-role">{{ 'Admin' if current_user.is_admin else 'Usuário' }}</div>
+        </div>
+      </div>
+      {% if current_user.is_admin %}
+      <a href="{{ url_for('admin.profile') }}"
+         class="nav-link {% if request.endpoint == 'admin.profile' %}active{% endif %}">
+        <i class="fas fa-user-circle"></i> Meu Perfil
+      </a>
+      {% endif %}
+      <a href="{{ url_for('auth.logout') }}" class="nav-link danger mt-2">
+        <i class="fas fa-sign-out-alt"></i> Sair
+      </a>
+    </div>
+  </aside>
+
+  <!-- Overlay para fechar sidebar no mobile -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="main-content">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Abrir menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="topbar-title">{% block page_title %}{% endblock %}</div>
+      </div>
+      <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    </div>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="alerts">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+              <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+              {{ message }}
+              <button class="alert-close" aria-label="Fechar"><i class="fas fa-times"></i></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Page content -->
+    <div class="page-content">
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+
+</div>
+
+{% else %}
+<!-- ── Unauthenticated (auth pages) ──────────────────── -->
+{% block auth_content %}{% endblock %}
+{% endif %}
+
+<!-- Scripts -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

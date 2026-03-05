@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Usuários · TaskFlow{% endblock %}
+{% block page_title %}Gerenciar Usuários{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-user-plus"></i> <span class="btn-label">Novo Usuário</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-users text-accent" style="margin-right:8px"></i>
+      {{ users | length }} usuário{{ 's' if users | length != 1 else '' }}
+    </span>
+  </div>
+
+  {% if users %}
+
+  <!-- ── Desktop: tabela ── -->
+  <div class="users-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuário</th>
+          <th>E-mail</th>
+          <th>Tarefas</th>
+          <th>Progresso</th>
+          <th>Status</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+        {% set s = user.task_stats() %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="user-avatar" style="width:38px;height:38px;font-size:14px;flex-shrink:0">{{ user.initials }}</div>
+              <div>
+                <div class="fw-600">{{ user.name }}</div>
+                <div class="text-muted fs-12">ID #{{ user.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-muted fs-13">{{ user.email }}</td>
+          
+          <td>
+            <div class="fw-600 fs-14">{{ s.total }}</div>
+            <div class="text-muted fs-12">{{ s.done }} conc. · {{ s.in_progress }} and.</div>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <span class="text-green fw-600 fs-13">{{ s.progress }}%</span>
+              <div class="progress-mini">
+                <div class="progress-mini-fill" style="width:{{ s.progress }}%"></div>
+              </div>
+            </div>
+          </td>
+          
+          <td>
+            <span class="badge badge-{{ 'active' if user.is_active_account else 'inactive' }}">
+              {{ 'Ativo' if user.is_active_account else 'Inativo' }}
+            </span>
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+                 class="btn btn-secondary btn-sm btn-icon" title="Editar usuário">
+                <i class="fas fa-pen"></i>
+              </a>
+              <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+                <button type="submit"
+                        class="btn btn-sm btn-icon {{ 'btn-danger' if user.is_active_account else 'btn-success' }}"
+                        title="{{ 'Desativar' if user.is_active_account else 'Ativar' }}">
+                  <i class="fas fa-{{ 'ban' if user.is_active_account else 'check' }}"></i>
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                    data-confirm="Remover {{ user.name }}? As tarefas serão desvinculadas.">
+                <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Excluir">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Mobile: cards ── -->
+  <div class="users-card-list">
+    {% for user in users %}
+    {% set s = user.task_stats() %}
+    <div class="user-mobile-card">
+
+      <div class="umc-header">
+        <div class="flex items-center gap-3" style="min-width:0">
+          <div class="user-avatar" style="flex-shrink:0">{{ user.initials }}</div>
+          <div style="min-width:0">
+            <div class="fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ user.name }}</div>
+            <div class="text-muted fs-12" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ user.email }}</div>
+          </div>
+        </div>
+        <div class="flex gap-2" style="flex-shrink:0">
+          <span class="badge badge-{{ 'active' if user.is_active_account else 'inactive' }}">
+            {{ 'Ativo' if user.is_active_account else 'Inativo' }}
+          </span>
+          <span class="badge {{ 'badge-urgent' if user.role == 'admin' else 'badge-medium' }}">
+            {{ 'Admin' if user.role == 'admin' else 'Usuário' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="umc-stats">
+        <div class="umc-stat">
+          <span class="umc-stat-label">Tarefas</span>
+          <span class="umc-stat-value">{{ s.total }}</span>
+        </div>
+        <div class="umc-stat">
+          <span class="umc-stat-label">Concluídas</span>
+          <span class="umc-stat-value text-green">{{ s.done }}</span>
+        </div>
+        <div class="umc-stat">
+          <span class="umc-stat-label">Progresso</span>
+          <span class="umc-stat-value text-accent">{{ s.progress }}%</span>
+        </div>
+        <div class="umc-stat">
+          <span class="umc-stat-label">Cadastro</span>
+          <span class="umc-stat-value">{{ user.created_at.strftime('%d/%m/%y') }}</span>
+        </div>
+      </div>
+
+      <div class="progress-wrap" style="margin:0 0 14px">
+        <div class="progress-fill" style="width:{{ s.progress }}%"></div>
+      </div>
+
+      <div class="umc-actions">
+        <a href="{{ url_for('admin.edit_user', user_id=user.id) }}"
+           class="btn btn-secondary btn-sm" style="flex:1;justify-content:center">
+          <i class="fas fa-pen"></i> Editar
+        </a>
+        <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+          <button type="submit" class="btn btn-sm btn-icon {{ 'btn-danger' if user.is_active_account else 'btn-success' }}"
+                  title="{{ 'Desativar' if user.is_active_account else 'Ativar' }}">
+            <i class="fas fa-{{ 'ban' if user.is_active_account else 'check' }}"></i>
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
+              data-confirm="Remover {{ user.name }}? As tarefas serão desvinculadas.">
+          <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Excluir">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="table-empty">
+    <i class="fas fa-user-slash"></i>
+    <p>Nenhum usuário cadastrado ainda.</p>
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm mt-3">
+      <i class="fas fa-user-plus"></i> Cadastrar primeiro usuário
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Cadastro · GestãoFlow{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+
+  <div class="auth-left">
+    <div class="grid-bg"></div>
+    <div class="glow glow-1" style="background:radial-gradient(circle,rgba(16,185,129,.12) 0%,transparent 70%)"></div>
+    <div class="auth-left-content">
+      <div class="auth-brand">GestãoFlow</div>
+      <div class="auth-tagline">Comece a organizar seu trabalho hoje.</div>
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <h4>Crie sua conta</h4>
+            <p>Cadastro rápido com nome, e-mail e senha.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <h4>Aguarde atribuições</h4>
+            <p>O administrador vai atribuir tarefas para você.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <h4>Execute e acompanhe</h4>
+            <p>Atualize o status das tarefas em tempo real.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-text">
+            <h4>Faça reservas dos equipamentos disponíveis</h4>
+            <p>Verifique a disponibilidade e faça reservas de equipamentos.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-right">
+    <div class="auth-form-box">
+      <div class="auth-header">
+        <h1>Criar nova conta</h1>
+        <p>Preencha as informações abaixo para se cadastrar</p>
+      </div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}" style="margin-bottom:16px">
+              <i class="fas fa-exclamation-circle"></i> {{ message }}
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.register') }}">
+        <div class="form-group">
+          <label for="name">Nome completo <span class="required">*</span></label>
+          <div class="input-group">
+            <i class="fas fa-user input-icon"></i>
+            <input type="text" id="name" name="name"
+                   placeholder="Seu nome completo" required
+                   value="{{ request.form.get('name', '') }}" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-mail <span class="required">*</span></label>
+          <div class="input-group">
+            <i class="fas fa-envelope input-icon"></i>
+            <input type="email" id="email" name="email"
+                   placeholder="seu@email.com" required
+                   value="{{ request.form.get('email', '') }}" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Senha <span class="required">*</span></label>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="password" name="password"
+                   placeholder="Mínimo 6 caracteres" required />
+            <button type="button" class="input-toggle"
+                    onclick="togglePassword('password', 'eye1')" aria-label="Mostrar senha">
+              <i class="fas fa-eye" id="eye1"></i>
+            </button>
+          </div>
+          <div class="form-hint">Use letras, números e símbolos para mais segurança.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirm_password">Confirmar senha <span class="required">*</span></label>
+          <div class="input-group">
+            <i class="fas fa-lock input-icon"></i>
+            <input type="password" id="confirm_password" name="confirm_password"
+                   placeholder="Repita a senha" required />
+            <button type="button" class="input-toggle"
+                    onclick="togglePassword('confirm_password', 'eye2')" aria-label="Mostrar senha">
+              <i class="fas fa-eye" id="eye2"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-auth">
+          <i class="fas fa-user-plus" style="margin-right:8px"></i>
+          Criar Conta
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        Já tem uma conta? <a href="{{ url_for('auth.login') }}">Faça login</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

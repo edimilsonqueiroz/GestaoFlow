@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Reservas de Laboratórios · Admin · TaskFlow{% endblock %}
+{% block page_title %}Reservas de Laboratórios{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('lab.admin_list') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-flask"></i> <span class="btn-label">Laboratórios</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-4 flex-wrap gap-3">
+  <div class="flex items-center gap-3">
+    <a href="{{ url_for('lab.admin_reservations', week=prev_week) }}" class="btn btn-secondary btn-sm btn-icon">
+      <i class="fas fa-chevron-left"></i>
+    </a>
+    <span class="fw-600 fs-14">
+      {{ days[0].strftime('%d/%m') }} — {{ days[4].strftime('%d/%m/%Y') }}
+    </span>
+    <a href="{{ url_for('lab.admin_reservations', week=next_week) }}" class="btn btn-secondary btn-sm btn-icon">
+      <i class="fas fa-chevron-right"></i>
+    </a>
+  </div>
+  <a href="{{ url_for('lab.admin_reservations') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-calendar-day"></i> Semana atual
+  </a>
+</div>
+
+{% if not reservations %}
+<div class="card">
+  <div class="table-empty">
+    <i class="fas fa-calendar-check"></i>
+    <p>Nenhuma reserva de laboratório nesta semana.</p>
+  </div>
+</div>
+{% else %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-calendar-week text-accent" style="margin-right:8px"></i>
+      {{ reservations | length }} reserva{{ 's' if reservations | length != 1 else '' }}
+    </span>
+  </div>
+
+  {# Desktop #}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Laboratório</th>
+          <th>Usuário</th>
+          <th>Data</th>
+          <th>Período</th>
+          <th>Horários</th>
+          <th>Observação</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for res in reservations %}
+        <tr>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="lab-icon-badge sm">
+                <i class="fas fa-flask" style="color:#fff;font-size:11px"></i>
+              </div>
+              <div>
+                <div class="fw-600 fs-13">{{ res.lab.name }}</div>
+                {% if res.lab.location %}<div class="text-muted fs-11">{{ res.lab.location }}</div>{% endif %}
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="flex items-center gap-2">
+              <div class="user-avatar" style="width:28px;height:28px;font-size:11px">{{ res.user.initials }}</div>
+              <span class="fs-13">{{ res.user.name }}</span>
+            </div>
+          </td>
+          <td>
+            <div class="fw-600 fs-13">{{ res.weekday_label }}</div>
+            <div class="text-muted fs-12">{{ res.date.strftime('%d/%m/%Y') }}</div>
+          </td>
+          <td><span class="fs-13">{{ res.period_label }}</span></td>
+          <td><span class="text-muted fs-12">{{ res.slots_label }}</span></td>
+          <td><span class="text-muted fs-13">{{ res.notes or '—' }}</span></td>
+          <td>
+            <form method="POST" action="{{ url_for('lab.cancel_reservation', res_id=res.id) }}"
+                  data-confirm="Cancelar reserva de {{ res.user.name }}?">
+              <input type="hidden" name="next" value="{{ request.url }}">
+              <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Cancelar">
+                <i class="fas fa-times"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {# Mobile #}
+  <div class="users-card-list">
+    {% for res in reservations %}
+    <div class="user-mobile-card">
+      <div class="umc-header">
+        <div class="flex items-center gap-3" style="min-width:0">
+          <div class="lab-icon-badge">
+            <i class="fas fa-flask" style="color:#fff"></i>
+          </div>
+          <div style="min-width:0">
+            <div class="fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ res.lab.name }}</div>
+            <div class="text-muted fs-12">{{ res.user.name }}</div>
+          </div>
+        </div>
+        <div style="flex-shrink:0;text-align:right">
+          <div class="fw-600 fs-13">{{ res.weekday_label }}</div>
+          <div class="text-muted fs-12">{{ res.date.strftime('%d/%m') }}</div>
+        </div>
+      </div>
+      <div class="umc-stats mb-3">
+        <div class="umc-stat">
+          <span class="umc-stat-label">Período</span>
+          <span class="umc-stat-value fs-13">{{ res.period_label }}</span>
+        </div>
+        <div class="umc-stat">
+          <span class="umc-stat-label">Horários</span>
+          <span class="umc-stat-value fs-12">{{ res.slots_label }}</span>
+        </div>
+        {% if res.notes %}
+        <div class="umc-stat">
+          <span class="umc-stat-label">Observação</span>
+          <span class="umc-stat-value fs-12">{{ res.notes }}</span>
+        </div>
+        {% endif %}
+      </div>
+      <div class="umc-actions">
+        <form method="POST" action="{{ url_for('lab.cancel_reservation', res_id=res.id) }}"
+              data-confirm="Cancelar reserva?" style="flex:1">
+          <input type="hidden" name="next" value="{{ request.url }}">
+          <button type="submit" class="btn btn-danger btn-sm" style="width:100%;justify-content:center">
+            <i class="fas fa-times"></i> Cancelar reserva
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+{% endif %}
+{% endblock %}

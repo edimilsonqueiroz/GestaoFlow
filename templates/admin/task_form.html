@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if task else 'Nova' }} Tarefa · TaskFlow{% endblock %}
+{% block page_title %}{{ 'Editar Tarefa' if task else 'Nova Tarefa' }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('admin.tasks') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card task-form-card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-{{ 'pen' if task else 'plus-circle' }} text-accent" style="margin-right:8px"></i>
+      {{ 'Editando: ' ~ task.title if task else 'Criar nova tarefa' }}
+    </span>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+
+      <div class="form-group">
+        <label for="title">Título <span class="required">*</span></label>
+        <input type="text" id="title" name="title" required
+               placeholder="Ex: Implementar autenticação JWT"
+               value="{{ task.title if task else '' }}" />
+      </div>
+
+      <div class="form-group">
+        <label for="description">Descrição <span class="hint">opcional</span></label>
+        <textarea id="description" name="description"
+                  placeholder="Descreva detalhes, requisitos ou observações desta tarefa...">{{ task.description if task else '' }}</textarea>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="assigned_to">Responsável</label>
+          <select id="assigned_to" name="assigned_to">
+            <option value="">— Sem responsável —</option>
+            {% for user in users %}
+              <option value="{{ user.id }}"
+                      {{ 'selected' if task and task.assigned_to == user.id }}>
+                {{ user.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="due_date">Data limite</label>
+          <input type="date" id="due_date" name="due_date"
+                 value="{{ task.due_date.strftime('%Y-%m-%d') if task and task.due_date else '' }}" />
+        </div>
+      </div>
+
+      <!-- Priority -->
+      <div class="form-group">
+        <label>Prioridade</label>
+        <div class="radio-grid">
+          {% set cur_p = task.priority if task else 'medium' %}
+          <div>
+            <input type="radio" class="radio-card radio-low" name="priority" id="p_low" value="low" {{ 'checked' if cur_p == 'low' }}>
+            <label for="p_low" class="radio-label"><i class="fas fa-minus-circle"></i> Baixa</label>
+          </div>
+          <div>
+            <input type="radio" class="radio-card radio-medium" name="priority" id="p_medium" value="medium" {{ 'checked' if cur_p == 'medium' }}>
+            <label for="p_medium" class="radio-label"><i class="fas fa-circle"></i> Média</label>
+          </div>
+          <div>
+            <input type="radio" class="radio-card radio-high" name="priority" id="p_high" value="high" {{ 'checked' if cur_p == 'high' }}>
+            <label for="p_high" class="radio-label"><i class="fas fa-arrow-up"></i> Alta</label>
+          </div>
+          <div>
+            <input type="radio" class="radio-card radio-urgent" name="priority" id="p_urgent" value="urgent" {{ 'checked' if cur_p == 'urgent' }}>
+            <label for="p_urgent" class="radio-label"><i class="fas fa-fire"></i> Urgente</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status — only on edit -->
+      {% if task %}
+      <div class="form-group">
+        <label>Status</label>
+        <div class="radio-grid-3">
+          <div>
+            <input type="radio" class="radio-card radio-pending" name="status" id="s_pending" value="pending" {{ 'checked' if task.status == 'pending' }}>
+            <label for="s_pending" class="radio-label"><i class="fas fa-clock"></i> Pendente</label>
+          </div>
+          <div>
+            <input type="radio" class="radio-card radio-inprog" name="status" id="s_inprog" value="in_progress" {{ 'checked' if task.status == 'in_progress' }}>
+            <label for="s_inprog" class="radio-label"><i class="fas fa-spinner"></i> Em Andamento</label>
+          </div>
+          <div>
+            <input type="radio" class="radio-card radio-done" name="status" id="s_done" value="done" {{ 'checked' if task.status == 'done' }}>
+            <label for="s_done" class="radio-label"><i class="fas fa-check-circle"></i> Concluída</label>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="form-actions">
+        <a href="{{ url_for('admin.tasks') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-{{ 'save' if task else 'plus' }}"></i>
+          {{ 'Salvar Alterações' if task else 'Criar Tarefa' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}

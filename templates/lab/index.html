@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Laboratórios · TaskFlow{% endblock %}
+{% block page_title %}Laboratórios{% endblock %}
+
+{% block content %}
+
+{% if not labs %}
+<div class="empty-state">
+  <div class="empty-state-icon"><i class="fas fa-flask"></i></div>
+  <h3>Nenhum laboratório disponível</h3>
+  <p>O administrador ainda não cadastrou laboratórios.</p>
+</div>
+{% else %}
+
+<div class="equip-card-grid">
+  {% for lab in labs %}
+  <a href="{{ url_for('lab.detail', lab_id=lab.id) }}" class="equip-card">
+    {% if lab.photo %}
+      <div class="equip-card-photo">
+        <img src="{{ url_for('static', filename=lab.photo) }}" alt="{{ lab.name }}">
+      </div>
+    {% else %}
+      <div class="lab-card-icon">
+        <i class="fas fa-flask" style="color:#fff"></i>
+      </div>
+    {% endif %}
+    <div class="equip-card-name">{{ lab.name }}</div>
+    {% if lab.location %}
+      <div class="equip-card-desc"><i class="fas fa-map-marker-alt" style="margin-right:4px;font-size:11px"></i>{{ lab.location }}</div>
+    {% endif %}
+    {% if lab.capacity %}
+      <div class="equip-card-cat"><i class="fas fa-chair" style="margin-right:4px;font-size:11px"></i>{{ lab.capacity }} lugares</div>
+    {% endif %}
+    <div class="equip-card-footer">
+      {% if lab._status_now == 'free' %}
+        <span class="equip-status-badge free"><i class="fas fa-check-circle"></i> Disponível</span>
+      {% elif lab._status_now == 'busy' %}
+        <span class="equip-status-badge busy"><i class="fas fa-clock"></i> Em uso até {{ lab._ongoing_res.end_time.strftime('%H:%M') }}</span>
+      {% else %}
+        <span class="equip-status-badge weekend"><i class="fas fa-calendar-times"></i> Fim de semana</span>
+      {% endif %}
+      <i class="fas fa-chevron-right equip-card-arrow"></i>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% if my_reservations %}
+<div class="card mt-4">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-calendar-check text-accent" style="margin-right:8px"></i>Minhas Reservas de Laboratório</span>
+  </div>
+  <div class="dash-list">
+    {% for res in my_reservations %}
+    <div class="dash-list-item">
+      <div class="dash-list-left">
+        <div class="lab-icon-badge sm">
+          <i class="fas fa-flask" style="color:#fff"></i>
+        </div>
+        <div class="dash-list-info">
+          <div class="fw-600 fs-13">{{ res.lab.name }}</div>
+          <div class="text-muted fs-12">
+            {{ res.weekday_label }}, {{ res.date.strftime('%d/%m/%Y') }} · {{ res.time_range }}
+          </div>
+          {% if res.notes %}<div class="text-muted fs-12 mt-1">{{ res.notes }}</div>{% endif %}
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('lab.cancel_reservation', res_id=res.id) }}"
+            data-confirm="Cancelar reserva de {{ res.lab.name }}?">
+        <input type="hidden" name="next" value="{{ url_for('lab.index') }}">
+        <button type="submit" class="btn btn-danger btn-sm btn-icon"><i class="fas fa-times"></i></button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

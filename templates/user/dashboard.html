@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Meu Painel · TaskFlow{% endblock %}
+{% block page_title %}Meu Painel{% endblock %}
+
+{% block content %}
+
+<div class="greeting">
+  <h2>Olá, {{ current_user.first_name }}</h2>
+  <p>Aqui estão as tarefas atribuídas a você e os equipamentos disponíveis para reservas.</p>
+</div>
+
+<!-- Stat cards -->
+<div class="stats-grid">
+  <div class="stat-card blue" data-stat="total">
+    <div class="stat-icon blue"><i class="fas fa-clipboard-list"></i></div>
+    <div class="stat-value">{{ stats.total }}</div>
+    <div class="stat-label">Total de Tarefas</div>
+  </div>
+  <div class="stat-card yellow" data-stat="pending">
+    <div class="stat-icon yellow"><i class="fas fa-hourglass-half"></i></div>
+    <div class="stat-value">{{ stats.pending }}</div>
+    <div class="stat-label">Pendentes</div>
+  </div>
+  <div class="stat-card blue" data-stat="in_progress">
+    <div class="stat-icon blue"><i class="fas fa-spinner"></i></div>
+    <div class="stat-value">{{ stats.in_progress }}</div>
+    <div class="stat-label">Em Andamento</div>
+  </div>
+  <div class="stat-card green" data-stat="done">
+    <div class="stat-icon green"><i class="fas fa-check-double"></i></div>
+    <div class="stat-value">{{ stats.done }}</div>
+    <div class="stat-label">Concluídas</div>
+  </div>
+</div>
+
+{% if tasks %}
+  {% if stats.total > 0 %}
+  <div class="mb-4">
+    <div class="flex justify-between items-center mb-2">
+      <span class="fs-13 fw-600 text-muted">Progresso Geral</span>
+      <span class="text-accent fw-700 fs-13" data-stat="progress-pct">{{ stats.progress }}%</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-fill" data-width="{{ stats.progress }}" style="width:0"></div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="task-grid">
+    {% for task in tasks %}
+    <div class="task-card {{ 'is-done' if task.status == 'done' else '' }}" id="task-card-{{ task.id }}">
+      <div class="task-card-priority-bar {{ task.priority }}"></div>
+      <div class="task-card-header">
+        <div class="task-card-title {{ 'striked' if task.status == 'done' else '' }}">{{ task.title }}</div>
+        <span class="badge badge-{{ task.priority }}">{{ task.priority_label }}</span>
+      </div>
+      {% if task.description %}
+        <div class="task-card-desc">{{ task.description | truncate(100) }}</div>
+      {% endif %}
+      <div class="task-card-footer">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span class="badge task-status-badge badge-{{ task.status }}">{{ task.status_label }}</span>
+          {% if task.due_date %}
+            <div class="task-due {{ 'overdue' if task.is_overdue else '' }}">
+              <i class="fas fa-calendar{{ '-times' if task.is_overdue else '' }}"></i>
+              {{ task.due_date.strftime('%d/%m/%Y') }}
+              {% if task.is_overdue %}<strong>(Atrasada)</strong>{% endif %}
+            </div>
+          {% endif %}
+        </div>
+        <select class="status-select" onchange="updateTaskStatus({{ task.id }}, this.value, this)">
+          <option value="pending"     {{ 'selected' if task.status == 'pending' }}>⏳ Pendente</option>
+          <option value="in_progress" {{ 'selected' if task.status == 'in_progress' }}>🔄 Em Andamento</option>
+          <option value="done"        {{ 'selected' if task.status == 'done' }}>✅ Concluída</option>
+        </select>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon"><i class="fas fa-inbox"></i></div>
+    <h3>Nenhuma tarefa ainda</h3>
+    <p>O administrador ainda não atribuiu tarefas para você.<br>Volte em breve!</p>
+  </div>
+{% endif %}
+
+<!-- ── Equipamentos disponíveis ── -->
+{% if equipments %}
+<div class="mt-4 mb-3 flex items-center justify-between">
+  <h3 class="fw-700 fs-14" style="font-family:var(--font-display)">
+    <i class="fas fa-box text-accent" style="margin-right:8px"></i>Equipamentos
+  </h3>
+  <a href="{{ url_for('equipment.index') }}" class="btn btn-secondary btn-sm">Ver todos</a>
+</div>
+
+<div class="equip-card-grid">
+  {% for eq in equipments %}
+  <a href="{{ url_for('equipment.detail', eq_id=eq.id) }}" class="equip-card">
+    <div class="equip-card-icon {{ eq.category }}">
+      <i class="fas {{ eq.category_icon }}"></i>
+    </div>
+    <div class="equip-card-name">{{ eq.name }}</div>
+    {% if eq.description %}
+      <div class="equip-card-desc">{{ eq.description }}</div>
+    {% endif %}
+    <div class="equip-card-cat">{{ eq.category_label }}</div>
+    <div class="equip-card-footer">
+      {% if eq._status_now == 'free' %}
+        <span class="equip-status-badge free"><i class="fas fa-check-circle"></i> Disponível</span>
+      {% elif eq._status_now == 'busy' %}
+        <span class="equip-status-badge busy"><i class="fas fa-clock"></i> Em uso até {{ eq._ongoing_res.end_time.strftime('%H:%M') }}</span>
+      {% else %}
+        <span class="equip-status-badge weekend"><i class="fas fa-calendar-times"></i> Fim de semana</span>
+      {% endif %}
+      <i class="fas fa-chevron-right equip-card-arrow"></i>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

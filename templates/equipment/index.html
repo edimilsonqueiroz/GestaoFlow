@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Equipamentos · TaskFlow{% endblock %}
+{% block page_title %}Equipamentos{% endblock %}
+
+{% block content %}
+
+{% if not equipments %}
+<div class="empty-state">
+  <div class="empty-state-icon"><i class="fas fa-box-open"></i></div>
+  <h3>Nenhum equipamento disponível</h3>
+  <p>O administrador ainda não cadastrou equipamentos.</p>
+</div>
+{% else %}
+
+<div class="equip-card-grid">
+  {% for eq in equipments %}
+  <a href="{{ url_for('equipment.detail', eq_id=eq.id) }}" class="equip-card">
+    {% if eq.photo %}
+      <div class="equip-card-photo">
+        <img src="{{ url_for('static', filename=eq.photo) }}" alt="{{ eq.name }}">
+      </div>
+    {% else %}
+      <div class="equip-card-icon {{ eq.category }}">
+        <i class="fas {{ eq.category_icon }}"></i>
+      </div>
+    {% endif %}
+    <div class="equip-card-name">{{ eq.name }}</div>
+    {% if eq.description %}
+      <div class="equip-card-desc">{{ eq.description }}</div>
+    {% endif %}
+    <div class="equip-card-cat">{{ eq.category_label }}</div>
+    <div class="equip-card-footer">
+      {% if eq._status_now == 'free' %}
+        <span class="equip-status-badge free"><i class="fas fa-check-circle"></i> Disponível</span>
+      {% elif eq._status_now == 'busy' %}
+        <span class="equip-status-badge busy"><i class="fas fa-clock"></i> Em uso até {{ eq._ongoing_res.end_time.strftime('%H:%M') }}</span>
+      {% else %}
+        <span class="equip-status-badge weekend"><i class="fas fa-calendar-times"></i> Fim de semana</span>
+      {% endif %}
+      <i class="fas fa-chevron-right equip-card-arrow"></i>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+
+{% if my_reservations %}
+<div class="card mt-4">
+  <div class="card-header">
+    <span class="card-title"><i class="fas fa-calendar-check text-accent" style="margin-right:8px"></i>Minhas Reservas</span>
+  </div>
+  <div class="dash-list">
+    {% for res in my_reservations %}
+    <div class="dash-list-item">
+      <div class="dash-list-left">
+        <div class="equip-icon-badge {{ res.equipment.category }} sm">
+          <i class="fas {{ res.equipment.category_icon }}"></i>
+        </div>
+        <div class="dash-list-info">
+          <div class="fw-600 fs-13">{{ res.equipment.name }}</div>
+          <div class="text-muted fs-12">
+            {{ res.weekday_label }}, {{ res.date.strftime('%d/%m/%Y') }} · {{ res.time_range }}
+          </div>
+          {% if res.notes %}<div class="text-muted fs-12 mt-1">{{ res.notes }}</div>{% endif %}
+        </div>
+      </div>
+      <form method="POST" action="{{ url_for('equipment.cancel_reservation', res_id=res.id) }}"
+            data-confirm="Cancelar reserva de {{ res.equipment.name }}?">
+        <input type="hidden" name="next" value="{{ url_for('equipment.index') }}">
+        <button type="submit" class="btn btn-danger btn-sm btn-icon"><i class="fas fa-times"></i></button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

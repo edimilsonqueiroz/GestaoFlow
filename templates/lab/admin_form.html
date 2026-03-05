@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if lab else 'Novo' }} Laboratório · TaskFlow{% endblock %}
+{% block page_title %}{{ 'Editar Laboratório' if lab else 'Novo Laboratório' }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('lab.admin_list') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="task-form-card card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-{{ 'pen' if lab else 'plus' }} text-accent" style="margin-right:8px"></i>
+      {{ 'Editando: ' ~ lab.name if lab else 'Cadastrar novo laboratório' }}
+    </span>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+
+      <div class="user-form-section">
+        <div class="user-form-section-title">
+          <i class="fas fa-flask"></i> Dados do Laboratório
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nome <span class="required">*</span></label>
+            <div class="input-group">
+              <i class="fas fa-tag input-icon"></i>
+              <input type="text" id="name" name="name" required
+                     placeholder="Ex: Lab. de Informática 1, Lab. de Redes..."
+                     value="{{ lab.name if lab else '' }}">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="location">Localização <span class="hint">(opcional)</span></label>
+            <div class="input-group">
+              <i class="fas fa-map-marker-alt input-icon"></i>
+              <input type="text" id="location" name="location"
+                     placeholder="Ex: Bloco B, Sala 201"
+                     value="{{ lab.location if lab else '' }}">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="capacity">Capacidade <span class="hint">(número de lugares)</span></label>
+            <div class="input-group">
+              <i class="fas fa-chair input-icon"></i>
+              <input type="number" id="capacity" name="capacity" min="0" max="500"
+                     placeholder="Ex: 30"
+                     value="{{ lab.capacity if lab else '' }}">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">Descrição <span class="hint">(opcional)</span></label>
+            <div class="input-group">
+              <i class="fas fa-info-circle input-icon"></i>
+              <input type="text" id="description" name="description"
+                     placeholder="Ex: 30 PCs, Linux Ubuntu, ar-condicionado..."
+                     value="{{ lab.description if lab else '' }}">
+            </div>
+          </div>
+        </div>
+
+        {# Upload de foto #}
+        <div class="form-group">
+          <label>Foto do Laboratório <span class="hint">(opcional)</span></label>
+          <div class="photo-upload-area" id="photoUploadArea">
+            {% if lab and lab.photo %}
+            <div class="photo-preview-wrap" id="photoPreviewWrap">
+              <img src="{{ url_for('static', filename=lab.photo) }}"
+                   alt="{{ lab.name }}" class="photo-preview-img" id="photoPreviewImg">
+              <div class="photo-preview-overlay">
+                <label for="photo" class="photo-change-btn">
+                  <i class="fas fa-camera"></i> Trocar foto
+                </label>
+                <button type="button" class="photo-remove-btn" onclick="removePhoto()">
+                  <i class="fas fa-trash"></i> Remover
+                </button>
+              </div>
+            </div>
+            <input type="hidden" name="remove_photo" id="removePhotoInput" value="0">
+            {% else %}
+            <label for="photo" class="photo-drop-zone" id="photoDropZone">
+              <div class="photo-drop-icon"><i class="fas fa-image"></i></div>
+              <div class="photo-drop-text">Clique ou arraste uma imagem aqui</div>
+              <div class="photo-drop-hint">JPG, PNG, WEBP ou GIF · máx. 5 MB</div>
+              <div class="photo-preview-new" id="photoPreviewNew" style="display:none">
+                <img id="photoPreviewImg" src="" alt="Preview">
+              </div>
+            </label>
+            {% endif %}
+            <input type="file" id="photo" name="photo" accept="image/*"
+                   style="display:none" onchange="previewPhoto(this)">
+          </div>
+        </div>
+
+        {% if lab %}
+        <div class="form-group mt-2">
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_active" {{ 'checked' if lab.is_active }}>
+            Laboratório ativo (disponível para reserva)
+          </label>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('lab.admin_list') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {{ 'Salvar Alterações' if lab else 'Cadastrar Laboratório' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var existingImg = document.getElementById('photoPreviewImg');
+    if (existingImg) existingImg.src = e.target.result;
+    var previewNew = document.getElementById('photoPreviewNew');
+    if (previewNew) {
+      document.getElementById('photoPreviewImg').src = e.target.result;
+      previewNew.style.display = 'block';
+      ['photo-drop-icon','photo-drop-text','photo-drop-hint'].forEach(function(c) {
+        var el = document.querySelector('.' + c);
+        if (el) el.style.display = 'none';
+      });
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+function removePhoto() {
+  if (!confirm('Remover a foto deste laboratório?')) return;
+  document.getElementById('removePhotoInput').value = '1';
+  var wrap = document.getElementById('photoPreviewWrap');
+  if (wrap) wrap.innerHTML = '<div class="photo-removed-msg"><i class="fas fa-trash-alt"></i> Foto será removida ao salvar</div>';
+}
+</script>
+{% endblock %}

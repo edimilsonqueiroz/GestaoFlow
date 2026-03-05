@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+{% block title %}Tarefas · TaskFlow{% endblock %}
+{% block page_title %}Gerenciar Tarefas{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('admin.create_task') }}" class="btn btn-primary btn-sm">
+    <i class="fas fa-plus"></i> <span class="btn-label">Nova Tarefa</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filtros -->
+<div class="filters-bar">
+  <div class="search-wrap">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" id="searchInput" class="search-input" placeholder="Buscar tarefa..." />
+  </div>
+  <button class="filter-btn active" data-filter="all">Todas</button>
+  <button class="filter-btn" data-filter="pending">Pendentes</button>
+  <button class="filter-btn" data-filter="in_progress">Andamento</button>
+  <button class="filter-btn" data-filter="done">Concluídas</button>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-tasks text-accent" style="margin-right:8px"></i>
+      {{ tasks | length }} tarefa{{ 's' if tasks | length != 1 else '' }}
+    </span>
+  </div>
+
+  {% if tasks %}
+
+  <!-- Desktop: tabela -->
+  <div class="tasks-table-wrap">
+    <table id="filterableTable">
+      <thead>
+        <tr>
+          <th>Título</th>
+          <th>Responsável</th>
+          <th>Prioridade</th>
+          <th>Status</th>
+          <th>Prazo</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr class="{{ 'overdue-row' if task.is_overdue else '' }}" data-status="{{ task.status }}">
+          <td>
+            <div class="fw-600">{{ task.title }}</div>
+            {% if task.description %}
+              <div class="text-muted fs-12 mt-1">{{ task.description | truncate(60) }}</div>
+            {% endif %}
+            {% if task.is_overdue %}
+              <div class="fs-12 text-red mt-1"><i class="fas fa-exclamation-triangle"></i> Atrasada</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if task.assignee %}
+              <div class="flex items-center gap-2">
+                <div class="user-avatar" style="width:28px;height:28px;font-size:11px;flex-shrink:0">{{ task.assignee.initials }}</div>
+                <span class="fs-13">{{ task.assignee.name }}</span>
+              </div>
+            {% else %}
+              <span class="text-muted fs-13">— Não atribuída</span>
+            {% endif %}
+          </td>
+          <td><span class="badge badge-{{ task.priority }}">{{ task.priority_label }}</span></td>
+          <td><span class="badge badge-{{ task.status }}">{{ task.status_label }}</span></td>
+          <td>
+            {% if task.due_date %}
+              <span class="fs-13 {{ 'text-red' if task.is_overdue else 'text-muted' }}">
+                {{ task.due_date.strftime('%d/%m/%Y') }}
+              </span>
+            {% else %}
+              <span class="text-muted fs-13">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{{ url_for('admin.edit_task', task_id=task.id) }}"
+                 class="btn btn-secondary btn-sm btn-icon" title="Editar">
+                <i class="fas fa-pen"></i>
+              </a>
+              <form method="POST" action="{{ url_for('admin.delete_task', task_id=task.id) }}"
+                    data-confirm="Deletar a tarefa '{{ task.title }}'?">
+                <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Excluir">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile: cards -->
+  <div class="tasks-card-list">
+    {% for task in tasks %}
+    <div class="task-mobile-card" data-status="{{ task.status }}">
+      <div class="tmc-priority-bar {{ task.priority }}"></div>
+
+      <div class="tmc-header">
+        <div class="tmc-title {{ 'text-red' if task.is_overdue else '' }}">
+          {{ task.title }}
+          {% if task.is_overdue %}
+            <span class="fs-12"> ⚠ Atrasada</span>
+          {% endif %}
+        </div>
+        <div class="flex gap-2" style="flex-shrink:0">
+          <a href="{{ url_for('admin.edit_task', task_id=task.id) }}"
+             class="btn btn-secondary btn-sm btn-icon" title="Editar">
+            <i class="fas fa-pen"></i>
+          </a>
+          <form method="POST" action="{{ url_for('admin.delete_task', task_id=task.id) }}"
+                data-confirm="Deletar '{{ task.title }}'?">
+            <button type="submit" class="btn btn-danger btn-sm btn-icon">
+              <i class="fas fa-trash"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {% if task.description %}
+        <div class="tmc-desc">{{ task.description | truncate(80) }}</div>
+      {% endif %}
+
+      <div class="tmc-meta">
+        <span class="badge badge-{{ task.status }}">{{ task.status_label }}</span>
+        <span class="badge badge-{{ task.priority }}">{{ task.priority_label }}</span>
+        {% if task.assignee %}
+          <span class="fs-12 text-muted"><i class="fas fa-user" style="margin-right:4px"></i>{{ task.assignee.name }}</span>
+        {% endif %}
+        {% if task.due_date %}
+          <span class="fs-12 {{ 'text-red' if task.is_overdue else 'text-muted' }}">
+            <i class="fas fa-calendar" style="margin-right:4px"></i>{{ task.due_date.strftime('%d/%m/%Y') }}
+          </span>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Filtro mobile também funciona nos cards -->
+  <script>
+  (function() {
+    var searchInput = document.getElementById('searchInput');
+    var filterBtns  = document.querySelectorAll('.filter-btn[data-filter]');
+    var mobileCards = document.querySelectorAll('.task-mobile-card');
+    if (!mobileCards.length) return;
+
+    var currentFilter = 'all';
+
+    function applyMobileFilter() {
+      var q = searchInput ? searchInput.value.toLowerCase() : '';
+      mobileCards.forEach(function(card) {
+        var matchFilter = currentFilter === 'all' || card.dataset.status === currentFilter;
+        var matchSearch = card.textContent.toLowerCase().indexOf(q) > -1;
+        card.style.display = (matchFilter && matchSearch) ? '' : 'none';
+      });
+    }
+
+    if (searchInput) searchInput.addEventListener('input', applyMobileFilter);
+    filterBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() { currentFilter = btn.dataset.filter; applyMobileFilter(); });
+    });
+  })();
+  </script>
+
+  {% else %}
+  <div class="table-empty">
+    <i class="fas fa-clipboard-list"></i>
+    <p>Nenhuma tarefa criada ainda.</p>
+    <a href="{{ url_for('admin.create_task') }}" class="btn btn-primary btn-sm mt-3">
+      Criar primeira tarefa
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

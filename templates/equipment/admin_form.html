@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if equipment else 'Novo' }} Equipamento · TaskFlow{% endblock %}
+{% block page_title %}{{ 'Editar Equipamento' if equipment else 'Novo Equipamento' }}{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('equipment.admin_list') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="task-form-card card">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-{{ 'pen' if equipment else 'plus' }} text-accent" style="margin-right:8px"></i>
+      {{ 'Editando: ' ~ equipment.name if equipment else 'Cadastrar novo equipamento' }}
+    </span>
+  </div>
+
+  <div class="card-body">
+    <form method="POST" enctype="multipart/form-data">
+
+      <div class="user-form-section">
+        <div class="user-form-section-title">
+          <i class="fas fa-box"></i> Dados do Equipamento
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="name">Nome <span class="required">*</span></label>
+            <div class="input-group">
+              <i class="fas fa-tag input-icon"></i>
+              <input type="text" id="name" name="name" required
+                     placeholder="Ex: Datashow Epson, Caixa JBL..."
+                     value="{{ equipment.name if equipment else '' }}">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="category">Categoria</label>
+            <select id="category" name="category">
+              <option value="datashow"     {{ 'selected' if equipment and equipment.category == 'datashow' }}>📽️ Datashow</option>
+              <option value="caixa_de_som" {{ 'selected' if equipment and equipment.category == 'caixa_de_som' }}>🔊 Caixa de Som</option>
+              <option value="microfone"    {{ 'selected' if equipment and equipment.category == 'microfone' }}>🎤 Microfone</option>
+              <option value="camera"       {{ 'selected' if equipment and equipment.category == 'camera' }}>📷 Câmera</option>
+              <option value="notebook"     {{ 'selected' if equipment and equipment.category == 'notebook' }}>💻 Notebook</option>
+              <option value="tv"           {{ 'selected' if equipment and equipment.category == 'tv' }}>📺 TV / Monitor</option>
+              <option value="outros"       {{ 'selected' if not equipment or equipment.category not in ['datashow','caixa_de_som','microfone','camera','notebook','tv'] }}>📦 Outros</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Descrição <span class="hint">(opcional)</span></label>
+          <input type="text" id="description" name="description"
+                 placeholder="Ex: HDMI + VGA, potência 150W, patrimônio #123..."
+                 value="{{ equipment.description if equipment else '' }}">
+          <div class="form-hint">Informações extras que ajudam na identificação.</div>
+        </div>
+
+        {# ── Upload de foto ── #}
+        <div class="form-group">
+          <label>Foto do Equipamento <span class="hint">(opcional)</span></label>
+
+          {# Preview da foto atual ou área de upload #}
+          <div class="photo-upload-area" id="photoUploadArea">
+
+            {% if equipment and equipment.photo %}
+            {# Foto existente #}
+            <div class="photo-preview-wrap" id="photoPreviewWrap">
+              <img src="{{ url_for('static', filename=equipment.photo) }}"
+                   alt="{{ equipment.name }}" class="photo-preview-img" id="photoPreviewImg">
+              <div class="photo-preview-overlay">
+                <label for="photo" class="photo-change-btn">
+                  <i class="fas fa-camera"></i> Trocar foto
+                </label>
+                <button type="button" class="photo-remove-btn" id="removePhotoBtn"
+                        onclick="removePhoto()">
+                  <i class="fas fa-trash"></i> Remover
+                </button>
+              </div>
+            </div>
+            <input type="hidden" name="remove_photo" id="removePhotoInput" value="0">
+
+            {% else %}
+            {# Sem foto — área de drop #}
+            <label for="photo" class="photo-drop-zone" id="photoDropZone">
+              <div class="photo-drop-icon"><i class="fas fa-image"></i></div>
+              <div class="photo-drop-text">Clique ou arraste uma imagem aqui</div>
+              <div class="photo-drop-hint">JPG, PNG, WEBP ou GIF · máx. 5 MB</div>
+              <div class="photo-preview-new" id="photoPreviewNew" style="display:none">
+                <img id="photoPreviewImg" src="" alt="Preview">
+              </div>
+            </label>
+            {% endif %}
+
+            <input type="file" id="photo" name="photo" accept="image/*"
+                   style="display:none" onchange="previewPhoto(this)">
+          </div>
+        </div>
+
+        {% if equipment %}
+        <div class="form-group mt-2">
+          <label class="checkbox-label">
+            <input type="checkbox" name="is_active" {{ 'checked' if equipment.is_active }}>
+            Equipamento ativo (disponível para reserva)
+          </label>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-actions">
+        <a href="{{ url_for('equipment.admin_list') }}" class="btn btn-secondary">Cancelar</a>
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i>
+          {{ 'Salvar Alterações' if equipment else 'Cadastrar Equipamento' }}
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function previewPhoto(input) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    // Se já tem foto — atualiza o img existente
+    var existingImg = document.getElementById('photoPreviewImg');
+    if (existingImg) {
+      existingImg.src = e.target.result;
+    }
+    // Se é upload novo — mostra preview na drop zone
+    var previewNew = document.getElementById('photoPreviewNew');
+    if (previewNew) {
+      document.getElementById('photoPreviewImg').src = e.target.result;
+      previewNew.style.display = 'block';
+      document.querySelector('.photo-drop-icon') && (document.querySelector('.photo-drop-icon').style.display = 'none');
+      document.querySelector('.photo-drop-text') && (document.querySelector('.photo-drop-text').style.display = 'none');
+      document.querySelector('.photo-drop-hint') && (document.querySelector('.photo-drop-hint').style.display = 'none');
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function removePhoto() {
+  if (!confirm('Remover a foto deste equipamento?')) return;
+  document.getElementById('removePhotoInput').value = '1';
+  // Substitui o preview por ícone de remoção
+  var wrap = document.getElementById('photoPreviewWrap');
+  if (wrap) {
+    wrap.innerHTML = '<div class="photo-removed-msg"><i class="fas fa-trash-alt"></i> Foto será removida ao salvar</div>';
+  }
+}
+</script>
+{% endblock %}
