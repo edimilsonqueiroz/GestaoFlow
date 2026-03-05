@@ -432,7 +432,7 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 .step-text h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .step-text p  { font-size: 13px; color: var(--text3); }
 .auth-right { display:flex; align-items:center; justify-content:center; padding:40px 48px; flex:1; min-width:0; }
-.auth-form-box { width: 100%; max-width: 420px; }
+.auth-form-box { width: 100%; max-width: 380px; }
 .auth-header { margin-bottom: 32px; }
 .auth-header h1 { font-family:var(--font-display); font-size:26px; font-weight:800; margin-bottom:6px; }
 .auth-header p  { font-size: 14px; color: var(--text2); }
@@ -1034,4 +1034,28 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
   .radio-grid   { grid-template-columns: repeat(2,1fr); }
   .radio-grid-3 { grid-template-columns: 1fr 1fr; }
   .topbar-title { font-size: 15px; }
+}
+
+/* ── Badge de pendentes na sidebar ───────────────────────────────────────── */
+.nav-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: auto;
+  background: var(--yellow, #eab308);
+  color: #000;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── badge-warning ────────────────────────────────────────────────────────── */
+.badge-warning {
+  background: rgba(234,179,8,.15);
+  color: #ca8a04;
+  border: 1px solid rgba(234,179,8,.3);
 }

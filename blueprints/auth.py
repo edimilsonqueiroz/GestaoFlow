@@ -24,7 +24,11 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
             if not user.is_active_account:
-                flash('Sua conta está desativada. Entre em contato com o administrador.', 'danger')
+                # Distingue conta pendente (nunca foi ativa) de conta desativada
+                if not user.was_approved:
+                    flash('Seu cadastro está aguardando aprovação do administrador.', 'warning')
+                else:
+                    flash('Sua conta foi desativada. Entre em contato com o administrador.', 'danger')
                 return render_template('auth/login.html')
             login_user(user, remember=remember)
             next_page = request.args.get('next')
@@ -51,11 +55,20 @@ def register():
         elif User.query.filter_by(email=email).first():
             flash('Este e-mail já está em uso.', 'danger')
         else:
-            user = User(name=name, email=email)
+            user = User(
+                name=name,
+                email=email,
+                is_active_account=False,  # bloqueado até aprovação do admin
+                was_approved=False,
+            )
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
-            flash('Cadastro realizado! Faça login para continuar.', 'success')
+            flash(
+                'Cadastro realizado com sucesso! '
+                'Aguarde a aprovação do administrador para acessar o sistema.',
+                'success',
+            )
             return redirect(url_for('auth.login'))
     return render_template('auth/register.html')
 

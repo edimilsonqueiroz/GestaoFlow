@@ -39,6 +39,7 @@ def dashboard():
         Task.due_date <  _date.today(),
         Task.due_date.isnot(None),
     ).scalar()
+    pending_approval = User.query.filter_by(role='user', was_approved=False).count()
     recent = Task.query.order_by(Task.created_at.desc()).limit(8).all()
     users  = User.query.filter_by(role='user').order_by(User.name).all()
     stats  = {
@@ -48,6 +49,7 @@ def dashboard():
         'tasks_pending':    tasks_pending,
         'tasks_inprogress': tasks_inprog,
         'tasks_overdue':    tasks_overdue,
+        'pending_approval': pending_approval,
     }
     return render_template('admin/dashboard.html', users=users, recent_tasks=recent, stats=stats)
 
@@ -130,8 +132,15 @@ def delete_task(task_id):
 @login_required
 @admin_required
 def users():
-    all_users = User.query.filter_by(role='user').order_by(User.created_at.desc()).all()
-    return render_template('admin/users.html', users=all_users)
+    pending = (User.query
+               .filter_by(role='user', was_approved=False)
+               .order_by(User.created_at.asc())
+               .all())
+    active_users = (User.query
+                    .filter_by(role='user', was_approved=True)
+                    .order_by(User.created_at.desc())
+                    .all())
+    return render_template('admin/users.html', pending=pending, users=active_users)
 
 
 @admin_bp.route('/users/<int:user_id>/toggle', methods=['POST'])
@@ -143,6 +152,34 @@ def toggle_user(user_id):
     db.session.commit()
     status = 'ativado' if user.is_active_account else 'desativado'
     flash(f'Usuário {user.name} foi {status}.', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/users/<int:user_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def approve_user(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_active_account = True
+    user.was_approved       = True
+    db.session.commit()
+    flash(f'Acesso de {user.name} aprovado com sucesso!', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin_bp.route('/users/<int:user_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def reject_user(user_id):
+    """Rejeita cadastro pendente e remove o usuário."""
+    user = User.query.get_or_404(user_id)
+    if user.was_approved:
+        flash('Este usuário já foi aprovado anteriormente.', 'danger')
+        return redirect(url_for('admin.users'))
+    name = user.name
+    db.session.delete(user)
+    db.session.commit()
+    flash(f'Cadastro de {name} rejeitado e removido.', 'info')
     return redirect(url_for('admin.users'))
 
 

@@ -60,6 +60,16 @@ def create_app():
     login_manager.login_message          = 'Por favor, faça login para acessar esta página.'
     login_manager.login_message_category = 'info'
 
+    # ── Context processor — disponibiliza pending_count globalmente nos templates ──
+    @app.context_processor
+    def inject_pending_count():
+        from flask_login import current_user
+        if current_user.is_authenticated and current_user.is_admin:
+            from models import User
+            count = User.query.filter_by(role='user', was_approved=False).count()
+            return {'pending_count': count}
+        return {'pending_count': 0}
+
     # ── Blueprints ────────────────────────────────────────────────────────────
     from blueprints.auth      import auth_bp
     from blueprints.admin     import admin_bp

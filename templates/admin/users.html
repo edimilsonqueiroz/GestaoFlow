@@ -9,17 +9,130 @@
 {% endblock %}
 
 {% block content %}
+
+{# ════════════════════════════════════════════════════════════════════════════
+   SEÇÃO 1 — Cadastros aguardando aprovação
+════════════════════════════════════════════════════════════════════════════ #}
+{% if pending %}
+<div class="card" style="border:2px solid var(--yellow);margin-bottom:24px">
+  <div class="card-header" style="background:rgba(234,179,8,.08)">
+    <span class="card-title" style="color:var(--yellow)">
+      <i class="fas fa-user-clock" style="margin-right:8px"></i>
+      Aguardando Aprovação
+      <span class="badge badge-warning" style="margin-left:8px;font-size:12px">{{ pending|length }}</span>
+    </span>
+    <span class="text-muted fs-13">Novos cadastros que precisam de liberação</span>
+  </div>
+
+  <!-- Desktop -->
+  <div class="users-table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuário</th>
+          <th>E-mail</th>
+          <th>Cadastrado em</th>
+          <th style="text-align:center">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in pending %}
+        <tr style="background:rgba(234,179,8,.04)">
+          <td>
+            <div class="flex items-center gap-3">
+              <div class="user-avatar pending-avatar" style="width:38px;height:38px;font-size:14px;flex-shrink:0;background:rgba(234,179,8,.2);color:var(--yellow)">
+                {{ user.initials }}
+              </div>
+              <div>
+                <div class="fw-600">{{ user.name }}</div>
+                <div class="text-muted fs-12">ID #{{ user.id }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="text-muted fs-13">{{ user.email }}</td>
+          <td class="text-muted fs-13">
+            {{ user.created_at.strftime('%d/%m/%Y às %H:%M') }}
+          </td>
+          <td>
+            <div class="flex gap-2" style="justify-content:center">
+              <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}">
+                <button type="submit" class="btn btn-success btn-sm"
+                        title="Aprovar acesso de {{ user.name }}">
+                  <i class="fas fa-check"></i> Aprovar
+                </button>
+              </form>
+              <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}"
+                    data-confirm="Rejeitar e remover o cadastro de {{ user.name }}?">
+                <button type="submit" class="btn btn-danger btn-sm btn-icon"
+                        title="Rejeitar cadastro">
+                  <i class="fas fa-times"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile -->
+  <div class="users-card-list">
+    {% for user in pending %}
+    <div class="user-mobile-card" style="border-left:3px solid var(--yellow)">
+      <div class="umc-header">
+        <div class="flex items-center gap-3" style="min-width:0">
+          <div class="user-avatar" style="flex-shrink:0;background:rgba(234,179,8,.2);color:var(--yellow)">
+            {{ user.initials }}
+          </div>
+          <div style="min-width:0">
+            <div class="fw-600" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ user.name }}</div>
+            <div class="text-muted fs-12" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ user.email }}</div>
+          </div>
+        </div>
+        <span class="badge badge-warning">Pendente</span>
+      </div>
+      <div class="text-muted fs-12" style="margin:8px 0 14px">
+        <i class="fas fa-clock" style="margin-right:4px"></i>
+        Cadastrado em {{ user.created_at.strftime('%d/%m/%Y às %H:%M') }}
+      </div>
+      <div class="umc-actions">
+        <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}"
+              style="flex:1">
+          <button type="submit" class="btn btn-success btn-sm" style="width:100%;justify-content:center">
+            <i class="fas fa-check"></i> Aprovar Acesso
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}"
+              data-confirm="Rejeitar e remover o cadastro de {{ user.name }}?">
+          <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Rejeitar">
+            <i class="fas fa-times"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ════════════════════════════════════════════════════════════════════════════
+   SEÇÃO 2 — Usuários ativos / inativos
+════════════════════════════════════════════════════════════════════════════ #}
 <div class="card">
   <div class="card-header">
     <span class="card-title">
       <i class="fas fa-users text-accent" style="margin-right:8px"></i>
-      {{ users | length }} usuário{{ 's' if users | length != 1 else '' }}
+      {{ users|length }} usuário{{ 's' if users|length != 1 else '' }}
     </span>
+    <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm">
+      <i class="fas fa-user-plus"></i> Novo
+    </a>
   </div>
 
   {% if users %}
 
-  <!-- ── Desktop: tabela ── -->
+  <!-- Desktop -->
   <div class="users-table-wrap">
     <table>
       <thead>
@@ -28,6 +141,7 @@
           <th>E-mail</th>
           <th>Tarefas</th>
           <th>Progresso</th>
+          <th>Cadastrado</th>
           <th>Status</th>
           <th>Ações</th>
         </tr>
@@ -46,7 +160,6 @@
             </div>
           </td>
           <td class="text-muted fs-13">{{ user.email }}</td>
-          
           <td>
             <div class="fw-600 fs-14">{{ s.total }}</div>
             <div class="text-muted fs-12">{{ s.done }} conc. · {{ s.in_progress }} and.</div>
@@ -59,7 +172,7 @@
               </div>
             </div>
           </td>
-          
+          <td class="text-muted fs-13">{{ user.created_at.strftime('%d/%m/%Y') }}</td>
           <td>
             <span class="badge badge-{{ 'active' if user.is_active_account else 'inactive' }}">
               {{ 'Ativo' if user.is_active_account else 'Inativo' }}
@@ -92,12 +205,11 @@
     </table>
   </div>
 
-  <!-- ── Mobile: cards ── -->
+  <!-- Mobile -->
   <div class="users-card-list">
     {% for user in users %}
     {% set s = user.task_stats() %}
     <div class="user-mobile-card">
-
       <div class="umc-header">
         <div class="flex items-center gap-3" style="min-width:0">
           <div class="user-avatar" style="flex-shrink:0">{{ user.initials }}</div>
@@ -110,12 +222,8 @@
           <span class="badge badge-{{ 'active' if user.is_active_account else 'inactive' }}">
             {{ 'Ativo' if user.is_active_account else 'Inativo' }}
           </span>
-          <span class="badge {{ 'badge-urgent' if user.role == 'admin' else 'badge-medium' }}">
-            {{ 'Admin' if user.role == 'admin' else 'Usuário' }}
-          </span>
         </div>
       </div>
-
       <div class="umc-stats">
         <div class="umc-stat">
           <span class="umc-stat-label">Tarefas</span>
@@ -134,11 +242,9 @@
           <span class="umc-stat-value">{{ user.created_at.strftime('%d/%m/%y') }}</span>
         </div>
       </div>
-
       <div class="progress-wrap" style="margin:0 0 14px">
         <div class="progress-fill" style="width:{{ s.progress }}%"></div>
       </div>
-
       <div class="umc-actions">
         <a href="{{ url_for('admin.edit_user', user_id=user.id) }}"
            class="btn btn-secondary btn-sm" style="flex:1;justify-content:center">
@@ -157,7 +263,6 @@
           </button>
         </form>
       </div>
-
     </div>
     {% endfor %}
   </div>
@@ -165,9 +270,9 @@
   {% else %}
   <div class="table-empty">
     <i class="fas fa-user-slash"></i>
-    <p>Nenhum usuário cadastrado ainda.</p>
+    <p>Nenhum usuário aprovado ainda.</p>
     <a href="{{ url_for('admin.create_user') }}" class="btn btn-primary btn-sm mt-3">
-      <i class="fas fa-user-plus"></i> Cadastrar primeiro usuário
+      <i class="fas fa-user-plus"></i> Cadastrar usuário
     </a>
   </div>
   {% endif %}

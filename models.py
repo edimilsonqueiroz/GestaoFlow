@@ -27,6 +27,7 @@ class User(UserMixin, db.Model):
     password_hash     = db.Column(db.String(256), nullable=False)
     role              = db.Column(db.String(20), default='user', index=True)
     is_active_account = db.Column(db.Boolean, default=True, index=True)
+    was_approved      = db.Column(db.Boolean, default=True)   # False = aguardando aprovação do admin
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
 
     tasks         = db.relationship('Task', backref='assignee',  lazy=True, foreign_keys='Task.assigned_to')
