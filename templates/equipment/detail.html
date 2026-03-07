@@ -118,14 +118,12 @@
             {# Botão cancelar para a reserva do usuário #}
             {% for res in day.my_reservations %}
               {% if item.slot in res.slots %}
-              <form method="POST" action="{{ url_for('equipment.cancel_reservation', res_id=res.id) }}"
-                    data-confirm="Cancelar sua reserva de '{{ item.slot.description }}'?"
-                    style="display:inline;margin-left:4px">
-                <input type="hidden" name="next" value="{{ request.url }}">
-                <button type="submit" class="equip-cancel-btn" title="Cancelar">
+              <button type="button" class="equip-cancel-btn" title="Cancelar"
+                data-res-id="{{ res.id }}"
+                data-res-label="{{ res.date.strftime('%d/%m/%Y') }}"
+                onclick="openCancelModal(this.dataset.resId, this.dataset.resLabel)">
                   <i class="fas fa-times"></i>
                 </button>
-              </form>
               {% endif %}
             {% endfor %}
           {% else %}
@@ -181,11 +179,12 @@
           {% if res.notes %}<div class="text-muted fs-12 mt-1">{{ res.notes }}</div>{% endif %}
         </div>
       </div>
-      <form method="POST" action="{{ url_for('equipment.cancel_reservation', res_id=res.id) }}"
-            data-confirm="Cancelar esta reserva?">
-        <input type="hidden" name="next" value="{{ request.url }}">
-        <button type="submit" class="btn btn-danger btn-sm btn-icon"><i class="fas fa-times"></i></button>
-      </form>
+      <button type="button" class="btn btn-danger btn-sm btn-icon"
+              data-res-id="{{ res.id }}"
+              data-res-label="{{ res.weekday_label }}, {{ res.date.strftime('%d/%m/%Y') }}"
+              onclick="openCancelModal(this.dataset.resId, this.dataset.resLabel)">
+        <i class="fas fa-times"></i>
+      </button>
     </div>
     {% endfor %}
   </div>
@@ -193,6 +192,58 @@
 {% endif %}
 
 {% endif %}{# end no_slots #}
+
+
+{# ── Modal de cancelamento ────────────────────────────────────────────────── #}
+<div class="modal-backdrop" id="cancelBackdrop" onclick="closeCancelModal()"></div>
+<div class="modal-box" id="cancelModal">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">Cancelar Reserva</div>
+      <div class="text-muted fs-12 mt-1" id="cancelModalSubtitle"></div>
+    </div>
+    <button class="modal-close" onclick="closeCancelModal()"><i class="fas fa-times"></i></button>
+  </div>
+  <form method="POST" id="cancelForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="next" value="{{ request.url }}">
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="cancelMotivo">
+          Motivo do cancelamento <span style="color:var(--red)">*</span>
+        </label>
+        <textarea id="cancelMotivo" name="motivo" rows="3"
+                  placeholder="Descreva o motivo do cancelamento..."
+                  style="width:100%;resize:vertical"
+                  required></textarea>
+        <div class="hint mt-1">Campo obrigatório — o motivo será registrado na reserva.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeCancelModal()">Voltar</button>
+      <button type="submit" class="btn btn-danger">
+        <i class="fas fa-times-circle" style="margin-right:6px"></i>Confirmar Cancelamento
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+function openCancelModal(resId, subtitle) {
+  document.getElementById('cancelForm').action = cancelUrl.replace('__ID__', resId);
+  document.getElementById('cancelModalSubtitle').textContent = subtitle || '';
+  document.getElementById('cancelMotivo').value = '';
+  document.getElementById('cancelModal').classList.add('open');
+  document.getElementById('cancelBackdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(function() { document.getElementById('cancelMotivo').focus(); }, 100);
+}
+function closeCancelModal() {
+  document.getElementById('cancelModal').classList.remove('open');
+  document.getElementById('cancelBackdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+</script>
 
 {# ── Modal de confirmação de reserva ── #}
 <div class="modal-backdrop" id="reserveBackdrop" onclick="closeReserveModal()"></div>
@@ -205,6 +256,7 @@
     <button class="modal-close" onclick="closeReserveModal()"><i class="fas fa-times"></i></button>
   </div>
   <form method="POST" action="{{ url_for('equipment.reserve') }}" id="reserveForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="modal-body">
       <input type="hidden" name="equipment_id" id="modalEquipId">
       <input type="hidden" name="date"          id="modalDate">
@@ -325,6 +377,7 @@ function openReserveModal(dateIso, dateFmt, equipId, weekRef) {
   document.body.style.overflow = 'hidden';
 }
 
+  var cancelUrl = "{{ url_for('equipment.cancel_reservation', res_id=0) }}".replace('/0', '/__ID__');
 function closeReserveModal() {
   document.getElementById('reserveModal').classList.remove('open');
   document.getElementById('reserveBackdrop').classList.remove('open');
