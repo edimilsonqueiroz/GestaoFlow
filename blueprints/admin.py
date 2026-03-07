@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 from extensions import db
 from blueprints.utils import parse_date as _parse_date_util
-from models import User, Task, TaskAction, TaskAttachment
+from models import User, Task, TaskAction, TaskAttachment, Equipment, Reservation
 from blueprints.emails import send_account_approved, send_account_rejected, send_task_assigned, send_new_user_pending
 
 admin_bp = Blueprint('admin', __name__)
@@ -81,9 +81,68 @@ def dashboard():
         Task.status != 'done'
     ).order_by(Task.created_at.desc()).all()
 
+    # ── Gráfico de reservas por equipamento no mês atual ─────────────────────
+    _MESES_PT = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    month_ref  = request.args.get('res_month', today.strftime('%Y-%m'))
+    try:
+        month_date = _date.fromisoformat(month_ref + '-01')
+    except ValueError:
+        month_date = today.replace(day=1)
+
+    month_start = month_date.replace(day=1)
+    # Último dia do mês
+    if month_date.month == 12:
+        month_end = month_date.replace(year=month_date.year+1, month=1, day=1) - _td(days=1)
+    else:
+        month_end = month_date.replace(month=month_date.month+1, day=1) - _td(days=1)
+
+    # Busca reservas do mês agrupadas por equipamento — uma query só
+    from sqlalchemy import extract, case as _case
+    rows = (
+        db.session.query(
+            Equipment.name,
+            func.sum(_case((Reservation.status.in_(['confirmed', 'expired']), 1), else_=0)).label('confirmed'),
+            func.sum(_case((Reservation.status == 'cancelled', 1), else_=0)).label('cancelled'),
+        )
+        .join(Reservation, Reservation.equipment_id == Equipment.id)
+        .filter(
+            extract('year',  Reservation.date) == month_date.year,
+            extract('month', Reservation.date) == month_date.month,
+        )
+        .group_by(Equipment.id, Equipment.name)
+        .order_by(Equipment.name)
+        .all()
+    )
+
+    equip_labels    = [r.name      for r in rows]
+    equip_confirmed = [r.confirmed for r in rows]
+    equip_cancelled = [r.cancelled for r in rows]
+
+    # Meses para navegação (últimos 6)
+    month_options = []
+    for i in range(5, -1, -1):
+        m = today.replace(day=1)
+        for _ in range(i):
+            m = (m - _td(days=1)).replace(day=1)
+        month_options.append({
+            'value': m.strftime('%Y-%m'),
+            'label': f"{_MESES_PT[m.month]}/{m.year}",
+        })
+
+    equip_chart_data = _json.dumps({
+        'labels':    equip_labels,
+        'confirmed': equip_confirmed,
+        'cancelled': equip_cancelled,
+        'month':     f"{_MESES_PT[month_date.month]} de {month_date.year}",
+    })
+
     return render_template('admin/dashboard.html',
         users=users, recent_tasks=recent, stats=stats,
-        chart_data=chart_data, unassigned_tasks=unassigned)
+        chart_data=chart_data, unassigned_tasks=unassigned,
+        equip_chart_data=equip_chart_data,
+        equip_has_data=bool(equip_labels),
+        month_ref=month_ref, month_options=month_options)
 
 
 # ─── Tasks ────────────────────────────────────────────────────────────────────
