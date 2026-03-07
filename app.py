@@ -24,7 +24,12 @@ def create_app():
     if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
 
-    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-32chars-taskflow!!')
+    # Flask-WTF CSRF — desabilitado em debug para facilitar desenvolvimento
+    _debug = os.environ.get('FLASK_DEBUG', '1') == '1'
+    app.config['WTF_CSRF_ENABLED']     = not _debug
+    app.config['WTF_CSRF_TIME_LIMIT']  = 3600   # 1 hora
+    app.config['WTF_CSRF_SSL_STRICT']  = False  # permite HTTP em dev
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
