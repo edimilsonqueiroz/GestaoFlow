@@ -143,17 +143,21 @@
   </div>
 
 </div>
+{% endblock %}
+
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-(function() {
-  var raw  = {{ chart_data | safe }};
-  var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+document.addEventListener("DOMContentLoaded", function() {
+  var canvas = document.getElementById('activityChart');
+  if (!canvas) return;  /* sai silenciosamente se o canvas não existir */
+
+  var raw       = {{ chart_data | safe }};
+  var isDark    = document.documentElement.getAttribute('data-theme') !== 'light';
   var gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
   var textColor = isDark ? '#9ba3bd' : '#5a6080';
 
-  var ctx = document.getElementById('activityChart').getContext('2d');
-  new Chart(ctx, {
+  var chart = new Chart(canvas.getContext('2d'), {
     type: 'line',
     data: {
       labels: raw.labels,
@@ -195,11 +199,22 @@
     },
   });
 
-  // Re-renderiza ao trocar tema
-  document.documentElement.addEventListener && (function() {
-    var observer = new MutationObserver(function() { location.reload(); });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  })();
-})();
+  /* Atualiza cores do gráfico ao trocar tema, sem recarregar a página */
+  var observer = new MutationObserver(function() {
+    var dark  = document.documentElement.getAttribute('data-theme') !== 'light';
+    var grid  = dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    var text  = dark ? '#9ba3bd' : '#5a6080';
+    chart.options.scales.x.grid.color  = grid;
+    chart.options.scales.x.ticks.color = text;
+    chart.options.scales.y.grid.color  = grid;
+    chart.options.scales.y.ticks.color = text;
+    chart.options.plugins.legend.labels.color = text;
+    chart.update();
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* Remove o observer quando o usuário sair da página */
+  window.addEventListener('pagehide', function() { observer.disconnect(); }, { once: true });
+});
 </script>
 {% endblock %}

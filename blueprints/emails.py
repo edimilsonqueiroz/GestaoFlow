@@ -14,7 +14,11 @@ log = logging.getLogger(__name__)
 
 
 def _send(subject: str, recipients: list[str], html: str) -> bool:
-    """Envia um e-mail HTML. Retorna True se enviado, False se falhou."""
+    """Envia um e-mail HTML. Retorna True se enviado, False se falhou/suprimido."""
+    # Não tenta conectar ao SMTP se não houver usuário configurado
+    if not current_app.config.get('MAIL_USERNAME'):
+        log.debug(f'[Mail] Suprimido (MAIL_USERNAME não configurado): {subject}')
+        return False
     try:
         msg = Message(
             subject=subject,
