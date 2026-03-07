@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,10 +11,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 
+  <!-- Anti-flash: aplica tema antes do CSS renderizar -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('tf_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
+
   <!-- App styles -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 
   {% block extra_styles %}{% endblock %}
+  <!-- CSRF token para chamadas AJAX -->
+  <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
 
@@ -44,6 +54,10 @@
         <a href="{{ url_for('admin.users') }}"
            class="nav-link {% if request.endpoint == 'admin.users' %}active{% endif %}">
           <i class="fas fa-users"></i> Usuários
+          {%- set _pending = pending_count if pending_count is defined else 0 %}
+          {% if _pending > 0 %}
+            <span class="nav-badge">{{ _pending }}</span>
+          {% endif %}
         </a>
         <a href="{{ url_for('equipment.admin_list') }}"
            class="nav-link {% if request.endpoint in ['equipment.admin_list','equipment.admin_create','equipment.admin_edit'] %}active{% endif %}">
@@ -101,6 +115,17 @@
         <i class="fas fa-user-circle"></i> Meu Perfil
       </a>
       {% endif %}
+      {% if not current_user.is_admin %}
+      <a href="{{ url_for('user.profile') }}"
+         class="nav-link {% if request.endpoint == 'user.profile' %}active{% endif %}">
+        <i class="fas fa-user-circle"></i> Meu Perfil
+      </a>
+      {% endif %}
+      <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar tema">
+        <span class="theme-icon" id="themeIcon">🌙</span>
+        <span class="theme-label" id="themeLabel">Tema Escuro</span>
+        <i class="fas fa-chevron-right" style="font-size:10px;opacity:.5"></i>
+      </button>
       <a href="{{ url_for('auth.logout') }}" class="nav-link danger mt-2">
         <i class="fas fa-sign-out-alt"></i> Sair
       </a>
@@ -153,5 +178,38 @@
 <!-- Scripts -->
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% block scripts %}{% endblock %}
+
+  <!-- ── Theme Toggle ─────────────────────────────────────────────────── -->
+  <script>
+  (function() {
+    // Restaura tema salvo assim que possível (evita flash)
+    var saved = localStorage.getItem('tf_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    // Atualiza ícone e label após DOM estar pronto
+    document.addEventListener('DOMContentLoaded', function() { _applyThemeUI(saved); });
+  })();
+
+  function toggleTheme() {
+    var html    = document.documentElement;
+    var current = html.getAttribute('data-theme') || 'dark';
+    var next    = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('tf_theme', next);
+    _applyThemeUI(next);
+  }
+
+  function _applyThemeUI(theme) {
+    var icon  = document.getElementById('themeIcon');
+    var label = document.getElementById('themeLabel');
+    if (!icon || !label) return;
+    if (theme === 'light') {
+      icon.textContent  = '☀️';
+      label.textContent = 'Tema Claro';
+    } else {
+      icon.textContent  = '🌙';
+      label.textContent = 'Tema Escuro';
+    }
+  }
+  </script>
 </body>
 </html>

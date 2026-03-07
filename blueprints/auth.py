@@ -1,7 +1,10 @@
+from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from extensions import db
 from models import User
+from extensions import limiter
+from blueprints.emails import send_new_user_pending
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -14,6 +17,7 @@ def index():
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit('10 per minute', methods=['POST'], error_message='Muitas tentativas de login. Aguarde 1 minuto.')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('auth.index'))
@@ -30,6 +34,8 @@ def login():
                 else:
                     flash('Sua conta foi desativada. Entre em contato com o administrador.', 'danger')
                 return render_template('auth/login.html')
+            user.last_login = datetime.utcnow()
+            db.session.commit()
             login_user(user, remember=remember)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('auth.index'))
@@ -38,6 +44,7 @@ def login():
 
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit('5 per hour', methods=['POST'], error_message='Muitos cadastros deste IP. Aguarde antes de tentar novamente.')
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('auth.index'))
@@ -64,6 +71,10 @@ def register():
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
+            # Notifica todos os admins sobre o novo cadastro pendente
+            admins = User.query.filter_by(role='admin').all()
+            for adm in admins:
+                send_new_user_pending(adm, user)
             flash(
                 'Cadastro realizado com sucesso! '
                 'Aguarde a aprovação do administrador para acessar o sistema.',

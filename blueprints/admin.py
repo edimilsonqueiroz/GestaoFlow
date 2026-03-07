@@ -5,7 +5,8 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 from extensions import db
 from blueprints.utils import parse_date as _parse_date_util
-from models import User, Task
+from models import User, Task, TaskAction, TaskAttachment
+from blueprints.emails import send_account_approved, send_account_rejected, send_task_assigned, send_new_user_pending
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -28,7 +29,10 @@ def admin_required(f):
 @login_required
 @admin_required
 def dashboard():
-    from datetime import date as _date
+    from datetime import date as _date, timedelta as _td
+    import json as _json
+
+    today = _date.today()
     total_users    = User.query.filter_by(role='user').count()
     total_tasks    = db.session.query(func.count(Task.id)).scalar()
     tasks_done     = db.session.query(func.count(Task.id)).filter_by(status='done').scalar()
@@ -36,7 +40,7 @@ def dashboard():
     tasks_inprog   = db.session.query(func.count(Task.id)).filter_by(status='in_progress').scalar()
     tasks_overdue  = db.session.query(func.count(Task.id)).filter(
         Task.status   != 'done',
-        Task.due_date <  _date.today(),
+        Task.due_date <  today,
         Task.due_date.isnot(None),
     ).scalar()
     pending_approval = User.query.filter_by(role='user', was_approved=False).count()
@@ -51,7 +55,35 @@ def dashboard():
         'tasks_overdue':    tasks_overdue,
         'pending_approval': pending_approval,
     }
-    return render_template('admin/dashboard.html', users=users, recent_tasks=recent, stats=stats)
+
+    # ── Dados para gráfico: tarefas criadas nos últimos 8 dias ───────────────
+    days_labels, days_created, days_done_list = [], [], []
+    for i in range(7, -1, -1):
+        d = today - _td(days=i)
+        days_labels.append(d.strftime('%d/%m'))
+        days_created.append(
+            db.session.query(func.count(Task.id))
+            .filter(func.date(Task.created_at) == d).scalar() or 0
+        )
+        days_done_list.append(
+            db.session.query(func.count(Task.id))
+            .filter(Task.status == 'done', func.date(Task.updated_at) == d).scalar() or 0
+        )
+
+    chart_data = _json.dumps({
+        'labels':  days_labels,
+        'created': days_created,
+        'done':    days_done_list,
+    })
+
+    unassigned = Task.query.filter(
+        Task.assigned_to.is_(None),
+        Task.status != 'done'
+    ).order_by(Task.created_at.desc()).all()
+
+    return render_template('admin/dashboard.html',
+        users=users, recent_tasks=recent, stats=stats,
+        chart_data=chart_data, unassigned_tasks=unassigned)
 
 
 # ─── Tasks ────────────────────────────────────────────────────────────────────
@@ -60,9 +92,28 @@ def dashboard():
 @login_required
 @admin_required
 def tasks():
-    all_tasks = Task.query.order_by(Task.created_at.desc()).all()
-    users     = User.query.filter_by(role='user', is_active_account=True).all()
-    return render_template('admin/tasks.html', tasks=all_tasks, users=users)
+    page       = request.args.get('page', 1, type=int)
+    per_page   = 20
+    q          = request.args.get('q', '').strip()
+    f_status   = request.args.get('status', '')
+    f_priority = request.args.get('priority', '')
+    f_user     = request.args.get('user_id', '', type=str)
+
+    query = Task.query
+    if q:
+        query = query.filter(Task.title.ilike(f'%{q}%'))
+    if f_status:
+        query = query.filter(Task.status == f_status)
+    if f_priority:
+        query = query.filter(Task.priority == f_priority)
+    if f_user:
+        query = query.filter(Task.assigned_to == int(f_user))
+
+    pagination = query.order_by(Task.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    users      = User.query.filter_by(role='user', is_active_account=True).order_by(User.name).all()
+    return render_template('admin/tasks.html',
+        tasks=pagination.items, pagination=pagination,
+        users=users, q=q, f_status=f_status, f_priority=f_priority, f_user=f_user)
 
 
 @admin_bp.route('/tasks/create', methods=['GET', 'POST'])
@@ -89,6 +140,8 @@ def create_task():
             )
             db.session.add(task)
             db.session.commit()
+            if task.assigned_to and task.assignee:
+                send_task_assigned(task, task.assignee)
             flash('Tarefa criada com sucesso!', 'success')
             return redirect(url_for('admin.tasks'))
     return render_template('admin/task_form.html', users=users, task=None)
@@ -112,8 +165,68 @@ def edit_task(task_id):
         db.session.commit()
         flash('Tarefa atualizada com sucesso!', 'success')
         return redirect(url_for('admin.tasks'))
-    return render_template('admin/task_form.html', users=users, task=task)
+    actions = (TaskAction.query
+               .filter_by(task_id=task_id)
+               .order_by(TaskAction.created_at.asc())
+               .all())
+    return render_template('admin/task_form.html', users=users, task=task, actions=actions)
 
+
+
+
+@admin_bp.route('/tasks/<int:task_id>/action', methods=['POST'])
+@login_required
+@admin_required
+def add_task_action_admin(task_id):
+    """Admin pode registrar ação em qualquer tarefa, mesmo concluída."""
+    from blueprints.utils import save_attachment, allowed_attachment
+    task = Task.query.get_or_404(task_id)
+
+    description = request.form.get('description', '').strip()
+    new_status  = request.form.get('new_status', task.status).strip()
+    files       = request.files.getlist('attachments')
+
+    if not description:
+        flash('A descrição da ação é obrigatória.', 'danger')
+        return redirect(url_for('admin.edit_task', task_id=task_id))
+
+    if new_status not in ('pending', 'in_progress', 'done'):
+        new_status = task.status
+
+    old_status  = task.status
+    action = TaskAction(
+        task_id=task_id,
+        user_id=current_user.id,
+        description=description,
+        old_status=old_status,
+        new_status=new_status,
+    )
+    db.session.add(action)
+    db.session.flush()
+
+    for f in files:
+        if not f or not f.filename:
+            continue
+        if not allowed_attachment(f.filename):
+            flash(f'{f.filename}: tipo não permitido.', 'warning')
+            continue
+        try:
+            info = save_attachment(f, task_id)
+            att  = TaskAttachment(
+                action_id=action.id,
+                filename=info['filename'],
+                filepath=info['filepath'],
+                filetype=info['filetype'],
+            )
+            db.session.add(att)
+        except ValueError as e:
+            flash(str(e), 'warning')
+
+    task.status     = new_status
+    task.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash('Ação registrada com sucesso!', 'success')
+    return redirect(url_for('admin.edit_task', task_id=task_id))
 
 @admin_bp.route('/tasks/<int:task_id>/delete', methods=['POST'])
 @login_required
@@ -132,15 +245,28 @@ def delete_task(task_id):
 @login_required
 @admin_required
 def users():
+    page     = request.args.get('page', 1, type=int)
+    per_page = 20
+    q        = request.args.get('q', '').strip()
+    f_status = request.args.get('status', '')   # 'active' | 'inactive' | ''
+
     pending = (User.query
                .filter_by(role='user', was_approved=False)
                .order_by(User.created_at.asc())
                .all())
-    active_users = (User.query
-                    .filter_by(role='user', was_approved=True)
-                    .order_by(User.created_at.desc())
-                    .all())
-    return render_template('admin/users.html', pending=pending, users=active_users)
+
+    uq = User.query.filter_by(role='user', was_approved=True)
+    if q:
+        uq = uq.filter(User.name.ilike(f'%{q}%') | User.email.ilike(f'%{q}%'))
+    if f_status == 'active':
+        uq = uq.filter_by(is_active_account=True)
+    elif f_status == 'inactive':
+        uq = uq.filter_by(is_active_account=False)
+
+    pagination = uq.order_by(User.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    return render_template('admin/users.html',
+        pending=pending, users=pagination.items,
+        pagination=pagination, q=q, f_status=f_status)
 
 
 @admin_bp.route('/users/<int:user_id>/toggle', methods=['POST'])
@@ -177,6 +303,7 @@ def reject_user(user_id):
         flash('Este usuário já foi aprovado anteriormente.', 'danger')
         return redirect(url_for('admin.users'))
     name = user.name
+    send_account_rejected(user)
     db.session.delete(user)
     db.session.commit()
     flash(f'Cadastro de {name} rejeitado e removido.', 'info')

@@ -106,6 +106,97 @@
       </div>
 
     </form>
+    {# ── Histórico de Ações (somente na edição) ─────────────────────────────── #}
+    {% if task %}
+    <div style="margin-top:32px;border-top:1px solid var(--border);padding-top:24px">
+      <h3 style="font-size:15px;font-weight:700;margin:0 0 16px;display:flex;align-items:center;gap:8px">
+        <i class="fas fa-history text-accent"></i> Histórico de Ações
+        <span class="badge badge-medium" style="font-size:11px">{{ actions|length if actions else 0 }}</span>
+      </h3>
+
+      {% if actions %}
+      <div style="margin-bottom:24px">
+        {% for action in actions %}
+        <div style="display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border)">
+          <div class="user-avatar" style="width:32px;height:32px;font-size:12px;flex-shrink:0;
+               {{ 'background:rgba(99,102,241,.2);color:var(--accent)' if action.author.is_admin else '' }}">
+            {{ action.author.initials }}
+          </div>
+          <div style="flex:1">
+            <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:4px">
+              <span class="fw-600 fs-13">{{ action.author.name }}</span>
+              {% if action.author.is_admin %}<span class="badge" style="background:rgba(99,102,241,.15);color:var(--accent);font-size:10px">Admin</span>{% endif %}
+              <span class="text-muted fs-12">{{ action.created_at| br_datetime }}</span>
+              {% if action.status_changed %}
+                {%- set sl = {'pending':'Pendente','in_progress':'Em Andamento','done':'Concluída'} %}
+                <span style="font-size:11px">
+                  <span class="badge badge-{{ action.old_status }}" style="font-size:10px">{{ sl.get(action.old_status, action.old_status) }}</span>
+                  →
+                  <span class="badge badge-{{ action.new_status }}" style="font-size:10px">{{ sl.get(action.new_status, action.new_status) }}</span>
+                </span>
+              {% endif %}
+            </div>
+            <p style="margin:0 0 8px;font-size:13px;line-height:1.5">{{ action.description }}</p>
+            {% if action.attachments %}
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              {% for att in action.attachments %}
+                {% if att.is_image %}
+                  <a href="{{ url_for('static', filename=att.filepath) }}" target="_blank">
+                    <img src="{{ url_for('static', filename=att.filepath) }}" alt="{{ att.filename }}"
+                         style="width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border)">
+                  </a>
+                {% else %}
+                  <a href="{{ url_for('static', filename=att.filepath) }}" target="_blank"
+                     style="display:flex;align-items:center;gap:6px;padding:6px 10px;
+                             background:var(--surface2);border:1px solid var(--border);
+                             border-radius:6px;font-size:12px;text-decoration:none;color:var(--text)">
+                    <i class="fas fa-file-pdf" style="color:#ef4444"></i>
+                    <span style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ att.filename }}</span>
+                  </a>
+                {% endif %}
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <p class="text-muted fs-13" style="margin-bottom:16px">Nenhuma ação registrada ainda.</p>
+      {% endif %}
+
+      {# Formulário de nova ação pelo admin #}
+      <form method="POST" action="{{ url_for('admin.add_task_action_admin', task_id=task.id) }}"
+            enctype="multipart/form-data"
+            style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px">
+        <h4 style="font-size:13px;font-weight:700;margin:0 0 14px;color:var(--accent)">
+          <i class="fas fa-plus-circle"></i> Registrar nova ação
+        </h4>
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-size:12px">Novo status</label>
+          <select name="new_status" class="form-control">
+            <option value="pending"     {{ 'selected' if task.status == 'pending' }}>⏳ Pendente</option>
+            <option value="in_progress" {{ 'selected' if task.status == 'in_progress' }}>🔄 Em Andamento</option>
+            <option value="done"        {{ 'selected' if task.status == 'done' }}>✅ Concluída</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label style="font-size:12px">Descrição da ação <span class="required">*</span></label>
+          <textarea name="description" rows="3" required
+                    placeholder="Descreva o que foi feito ou observado…"></textarea>
+        </div>
+        <div class="form-group" style="margin-bottom:14px">
+          <label style="font-size:12px">Anexos <span class="hint">imagens ou PDF</span></label>
+          <input type="file" name="attachments" multiple accept="image/*,.pdf"
+                 style="font-size:13px">
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">
+          <i class="fas fa-save"></i> Registrar Ação
+        </button>
+      </form>
+    </div>
+    {% endif %}
+
   </div>
 </div>
 {% endblock %}

@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% block title %}{{ task.title }} · TaskFlow{% endblock %}
+{% block page_title %}Detalhes da Tarefa{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary btn-sm">
+    <i class="fas fa-arrow-left"></i> <span class="btn-label">Voltar</span>
+  </a>
+{% endblock %}
+
+{% block content %}
+
+{# ── Header da Tarefa ─────────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:24px">
+  <div class="card-header" style="padding-bottom:0;border-bottom:none">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;width:100%">
+      <div style="flex:1;min-width:200px">
+        <div class="task-card-priority-bar {{ task.priority }}"
+             style="height:4px;border-radius:4px;margin-bottom:12px;
+                    width:60px;background:var(--priority-{{ task.priority }},#888)"></div>
+        <h2 class="fw-700" style="font-size:20px;margin:0 0 8px;
+           {{ 'text-decoration:line-through;opacity:.6' if task.status == 'done' else '' }}">
+          {{ task.title }}
+        </h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+          <span class="badge badge-{{ task.status }}" id="status-badge">{{ task.status_label }}</span>
+          <span class="badge badge-{{ task.priority }}">{{ task.priority_label }}</span>
+          {% if task.is_overdue %}
+            <span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444">
+              <i class="fas fa-exclamation-triangle"></i> Atrasada
+            </span>
+          {% endif %}
+          {% if task.status == 'done' %}
+            <span class="badge" style="background:rgba(16,185,129,.12);color:#10b981;font-size:11px">
+              <i class="fas fa-lock"></i> Concluída — somente admin pode alterar
+            </span>
+          {% endif %}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--text-muted)">
+        {% if task.due_date %}
+          <div><i class="fas fa-calendar" style="width:16px"></i>
+            Prazo: <strong class="{{ 'text-red' if task.is_overdue else '' }}">
+              {{ task.due_date.strftime('%d/%m/%Y') }}
+            </strong>
+          </div>
+        {% endif %}
+        <div><i class="fas fa-clock" style="width:16px"></i>
+          Criada em: {{ task.created_at| br_datetime }}
+        </div>
+        <div><i class="fas fa-sync-alt" style="width:16px"></i>
+          Atualizada: {{ task.updated_at| br_datetime }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if task.description %}
+  <div class="card-body" style="padding-top:16px">
+    <label class="text-muted fs-12 fw-600" style="text-transform:uppercase;letter-spacing:.5px">Descrição</label>
+    <p style="margin:6px 0 0;line-height:1.6">{{ task.description }}</p>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Histórico de Ações ───────────────────────────────────────────────────── #}
+<div class="card" style="margin-bottom:24px">
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-history text-accent" style="margin-right:8px"></i>
+      Histórico de Ações
+      <span class="badge badge-medium" style="margin-left:8px;font-size:11px">{{ actions|length }}</span>
+    </span>
+  </div>
+
+  {% if actions %}
+  <div style="padding:0 24px 8px">
+    {% for action in actions %}
+    <div class="action-item" style="
+         display:flex;gap:16px;padding:16px 0;
+         border-bottom:1px solid var(--border);
+         {{ 'padding-bottom:8px' if loop.last else '' }}">
+
+      {# Avatar do autor #}
+      <div style="flex-shrink:0">
+        <div class="user-avatar" style="width:36px;height:36px;font-size:13px;
+             {{ 'background:rgba(99,102,241,.2);color:var(--accent)' if action.author.is_admin else '' }}">
+          {{ action.author.initials }}
+        </div>
+      </div>
+
+      <div style="flex:1;min-width:0">
+        {# Cabeçalho da ação #}
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px">
+          <span class="fw-600 fs-14">{{ action.author.name }}</span>
+          {% if action.author.is_admin %}
+            <span class="badge" style="background:rgba(99,102,241,.15);color:var(--accent);font-size:10px">
+              <i class="fas fa-shield-alt"></i> Admin
+            </span>
+          {% endif %}
+          <span class="text-muted fs-12">{{ action.created_at| br_datetime }}</span>
+          {# Mudança de status #}
+          {% if action.status_changed %}
+            <span style="font-size:12px;color:var(--text-muted)">
+              {%- set status_labels = {'pending':'Pendente','in_progress':'Em Andamento','done':'Concluída'} %}
+              <span class="badge badge-{{ action.old_status }}" style="font-size:10px">{{ status_labels.get(action.old_status, action.old_status) }}</span>
+              <i class="fas fa-arrow-right" style="margin:0 4px;font-size:10px"></i>
+              <span class="badge badge-{{ action.new_status }}" style="font-size:10px">{{ status_labels.get(action.new_status, action.new_status) }}</span>
+            </span>
+          {% endif %}
+        </div>
+
+        {# Descrição #}
+        <p style="margin:0 0 10px;line-height:1.55;font-size:14px">{{ action.description }}</p>
+
+        {# Anexos #}
+        {% if action.attachments %}
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          {% for att in action.attachments %}
+            {% if att.is_image %}
+              <a href="{{ url_for('static', filename=att.filepath) }}"
+                 target="_blank" class="attachment-thumb" title="{{ att.filename }}">
+                <img src="{{ url_for('static', filename=att.filepath) }}"
+                     alt="{{ att.filename }}"
+                     style="width:80px;height:80px;object-fit:cover;border-radius:8px;
+                            border:1px solid var(--border);cursor:zoom-in">
+              </a>
+            {% else %}
+              <a href="{{ url_for('static', filename=att.filepath) }}"
+                 target="_blank" class="attachment-pdf"
+                 style="display:flex;align-items:center;gap:8px;padding:8px 12px;
+                        background:var(--surface2);border:1px solid var(--border);
+                        border-radius:8px;font-size:13px;text-decoration:none;color:var(--text)">
+                <i class="fas fa-file-pdf" style="color:#ef4444;font-size:18px"></i>
+                <span style="max-width:150px;overflow:hidden;text-overflow:ellipsis;
+                             white-space:nowrap">{{ att.filename }}</span>
+                <i class="fas fa-download" style="font-size:11px;opacity:.5"></i>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="table-empty" style="padding:32px">
+    <i class="fas fa-clipboard"></i>
+    <p>Nenhuma ação registrada ainda.</p>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Formulário: Nova Ação ────────────────────────────────────────────────── #}
+{% set is_locked = task.status == 'done' and not current_user.is_admin %}
+
+<div class="card" {% if is_locked %}style="opacity:.6;pointer-events:none"{% endif %}>
+  <div class="card-header">
+    <span class="card-title">
+      <i class="fas fa-plus-circle text-accent" style="margin-right:8px"></i>
+      {% if is_locked %}
+        Tarefa concluída — ações bloqueadas para usuários
+      {% else %}
+        Registrar Nova Ação
+      {% endif %}
+    </span>
+  </div>
+
+  {% if not is_locked %}
+  <div class="card-body">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for cat, msg in messages %}
+          <div class="alert alert-{{ cat }}" style="margin-bottom:16px">
+            <i class="fas fa-info-circle"></i> {{ msg }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST"
+          action="{{ url_for('user.add_task_action', task_id=task.id) }}"
+          enctype="multipart/form-data">
+
+      {# Mudança de status #}
+      <div class="form-group">
+        <label for="new_status">Status após esta ação</label>
+        <select id="new_status" name="new_status" class="form-control">
+          <option value="pending"     {{ 'selected' if task.status == 'pending' }}>⏳ Pendente</option>
+          <option value="in_progress" {{ 'selected' if task.status == 'in_progress' }}>🔄 Em Andamento</option>
+          <option value="done"        {{ 'selected' if task.status == 'done' }}>✅ Concluída</option>
+        </select>
+        {% if not current_user.is_admin %}
+          <div class="form-hint" style="color:#eab308">
+            <i class="fas fa-exclamation-triangle"></i>
+            Ao marcar como <strong>Concluída</strong>, você não poderá mais alterar o status.
+          </div>
+        {% endif %}
+      </div>
+
+      {# Descrição #}
+      <div class="form-group">
+        <label for="description">O que foi feito? <span class="required">*</span></label>
+        <textarea id="description" name="description" rows="4" required
+                  placeholder="Descreva as ações realizadas, problemas encontrados, observações…"></textarea>
+      </div>
+
+      {# Anexos #}
+      <div class="form-group">
+        <label>Anexos <span class="hint">até 5 arquivos — imagens ou PDF, máx. 10 MB cada</span></label>
+        <div class="file-drop-area" id="fileDropArea">
+          <i class="fas fa-cloud-upload-alt" style="font-size:28px;opacity:.4;margin-bottom:8px"></i>
+          <p style="margin:0;font-size:14px;opacity:.7">Arraste arquivos aqui ou</p>
+          <label class="btn btn-secondary btn-sm" style="margin-top:8px;cursor:pointer">
+            <i class="fas fa-paperclip"></i> Selecionar Arquivos
+            <input type="file" name="attachments" id="attachmentInput"
+                   multiple accept="image/*,.pdf" style="display:none"
+                   onchange="previewFiles(this)">
+          </label>
+        </div>
+        <div id="filePreviewList" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px"></div>
+      </div>
+
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-check" style="margin-right:6px"></i> Registrar Ação
+        </button>
+        <a href="{{ url_for('user.dashboard') }}" class="btn btn-secondary">
+          Cancelar
+        </a>
+      </div>
+    </form>
+  </div>
+  {% else %}
+  <div class="card-body">
+    <p class="text-muted" style="margin:0">
+      <i class="fas fa-lock" style="margin-right:6px"></i>
+      Esta tarefa foi concluída. Entre em contato com o administrador para reabri-la.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── Preview de arquivos antes do upload ───────────────────────────────────── */
+function previewFiles(input) {
+  var list = document.getElementById('filePreviewList');
+  list.innerHTML = '';
+  var files = Array.from(input.files);
+  if (!files.length) return;
+
+  files.forEach(function(file) {
+    var item = document.createElement('div');
+    item.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;' +
+                         'border:1px solid var(--border);background:var(--surface2)';
+
+    if (file.type.startsWith('image/')) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        item.innerHTML = '<img src="' + e.target.result + '" ' +
+          'style="width:80px;height:80px;object-fit:cover;display:block">' +
+          '<div style="font-size:10px;padding:3px 5px;overflow:hidden;' +
+          'text-overflow:ellipsis;white-space:nowrap;max-width:80px">' + file.name + '</div>';
+      };
+      reader.readAsDataURL(file);
+    } else {
+      item.style.cssText += ';padding:10px 14px;display:flex;align-items:center;gap:8px';
+      item.innerHTML = '<i class="fas fa-file-pdf" style="color:#ef4444;font-size:22px"></i>' +
+        '<span style="font-size:12px;max-width:120px;overflow:hidden;' +
+        'text-overflow:ellipsis;white-space:nowrap">' + file.name + '</span>';
+    }
+    list.appendChild(item);
+  });
+}
+
+/* ── Drag & drop ───────────────────────────────────────────────────────────── */
+(function() {
+  var area  = document.getElementById('fileDropArea');
+  var input = document.getElementById('attachmentInput');
+  if (!area || !input) return;
+
+  ['dragenter','dragover'].forEach(function(ev) {
+    area.addEventListener(ev, function(e) {
+      e.preventDefault();
+      area.style.borderColor = 'var(--accent)';
+      area.style.background  = 'rgba(99,102,241,.05)';
+    });
+  });
+  ['dragleave','drop'].forEach(function(ev) {
+    area.addEventListener(ev, function(e) {
+      e.preventDefault();
+      area.style.borderColor = '';
+      area.style.background  = '';
+    });
+  });
+  area.addEventListener('drop', function(e) {
+    var dt = e.dataTransfer;
+    if (dt && dt.files.length) {
+      input.files = dt.files;
+      previewFiles(input);
+    }
+  });
+})();
+
+/* ── Aviso ao selecionar "Concluída" ───────────────────────────────────────── */
+(function() {
+  var sel = document.getElementById('new_status');
+  if (!sel) return;
+  sel.addEventListener('change', function() {
+    var hint = sel.parentElement.querySelector('.form-hint');
+    if (sel.value === 'done') {
+      hint.style.display = '';
+      hint.style.fontWeight = '600';
+    } else {
+      hint.style.display = 'none';
+    }
+  });
+  // Estado inicial
+  if (sel.value !== 'done') {
+    var hint = sel.parentElement.querySelector('.form-hint');
+    if (hint) hint.style.display = 'none';
+  }
+})();
+</script>
+{% endblock %}

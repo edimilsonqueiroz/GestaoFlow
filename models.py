@@ -29,6 +29,7 @@ class User(UserMixin, db.Model):
     is_active_account = db.Column(db.Boolean, default=True, index=True)
     was_approved      = db.Column(db.Boolean, default=True)   # False = aguardando aprovação do admin
     created_at        = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login        = db.Column(db.DateTime, nullable=True)
 
     tasks         = db.relationship('Task', backref='assignee',  lazy=True, foreign_keys='Task.assigned_to')
     created_tasks = db.relationship('Task', backref='creator',   lazy=True, foreign_keys='Task.created_by')
@@ -46,12 +47,28 @@ class User(UserMixin, db.Model):
     def first_name(self): return self.name.split()[0]
 
     def task_stats(self):
-        total = len(self.tasks)
-        done  = sum(1 for t in self.tasks if t.status == 'done')
-        ip    = sum(1 for t in self.tasks if t.status == 'in_progress')
-        pend  = sum(1 for t in self.tasks if t.status == 'pending')
-        return {'total': total, 'done': done, 'in_progress': ip, 'pending': pend,
-                'progress': int(done / total * 100) if total else 0}
+        """Retorna contagens via query agregada — sem carregar objetos em memória."""
+        from sqlalchemy import func, case
+        from extensions import db
+        row = (
+            db.session.query(
+                func.count(Task.id).label('total'),
+                func.sum(case((Task.status == 'done',       1), else_=0)).label('done'),
+                func.sum(case((Task.status == 'in_progress',1), else_=0)).label('in_progress'),
+                func.sum(case((Task.status == 'pending',    1), else_=0)).label('pending'),
+            )
+            .filter(Task.assigned_to == self.id)
+            .one()
+        )
+        total = row.total or 0
+        done  = row.done  or 0
+        return {
+            'total':      total,
+            'done':       done,
+            'in_progress': row.in_progress or 0,
+            'pending':    row.pending or 0,
+            'progress':   int(done / total * 100) if total else 0,
+        }
 
     def __repr__(self): return f'<User {self.email}>'
 
@@ -300,3 +317,46 @@ class Task(db.Model):
     def priority_label(self):
         return {'low':'Baixa','medium':'Média','high':'Alta','urgent':'Urgente'}.get(self.priority, self.priority)
     def __repr__(self): return f'<Task {self.id}: {self.title}>'
+
+
+
+
+# ─── Ação / log de uma tarefa ─────────────────────────────────────────────────
+
+class TaskAction(db.Model):
+    __tablename__ = 'task_actions'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    task_id     = db.Column(db.Integer, db.ForeignKey('tasks.id', ondelete='CASCADE'), nullable=False, index=True)
+    user_id     = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    old_status  = db.Column(db.String(20))          # status anterior
+    new_status  = db.Column(db.String(20))          # status após esta ação
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    attachments = db.relationship('TaskAttachment', backref='action',
+                                  lazy=True, cascade='all, delete-orphan')
+    author      = db.relationship('User', foreign_keys=[user_id])
+
+    @property
+    def status_changed(self):
+        return self.old_status and self.new_status and self.old_status != self.new_status
+
+
+class TaskAttachment(db.Model):
+    __tablename__ = 'task_attachments'
+
+    id          = db.Column(db.Integer, primary_key=True)
+    action_id   = db.Column(db.Integer, db.ForeignKey('task_actions.id', ondelete='CASCADE'), nullable=False, index=True)
+    filename    = db.Column(db.String(260), nullable=False)   # nome original exibido
+    filepath    = db.Column(db.String(260), nullable=False)   # caminho relativo a static/
+    filetype    = db.Column(db.String(10))                    # 'image' ou 'pdf'
+    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def is_image(self):
+        return self.filetype == 'image'
+
+    @property
+    def is_pdf(self):
+        return self.filetype == 'pdf'

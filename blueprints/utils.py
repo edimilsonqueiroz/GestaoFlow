@@ -21,6 +21,7 @@ from extensions import db
 
 # ── Extensões de imagem permitidas ───────────────────────────────────────────
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif'}
+ALLOWED_ATTACHMENT_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'gif', 'pdf'}
 
 
 # ── Upload / foto ─────────────────────────────────────────────────────────────
@@ -151,3 +152,53 @@ def admin_required_redirect():
         flash('Acesso restrito a administradores.', 'danger')
         return redirect(url_for('user.dashboard'))
     return None
+
+
+def allowed_attachment(filename: str) -> bool:
+    """Aceita imagens e PDF para anexos de tarefas."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_ATTACHMENT_EXTENSIONS
+
+
+def save_attachment(file_storage, task_id: int) -> dict:
+    """
+    Salva um anexo (imagem ou PDF) em static/uploads/tasks/<task_id>/.
+    Retorna dict com 'filepath', 'filetype' e 'filename' original.
+    Para imagens usa Pillow (valida + resize); para PDF salva direto.
+    Lança ValueError se o tipo não for permitido.
+    """
+    original_name = file_storage.filename
+    ext = original_name.rsplit('.', 1)[1].lower() if '.' in original_name else ''
+    if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
+        raise ValueError(f'Tipo de arquivo não permitido: {ext}')
+
+    folder = os.path.join(current_app.root_path, 'static', 'uploads', 'tasks', str(task_id))
+    os.makedirs(folder, exist_ok=True)
+    saved_name = f"{uuid.uuid4().hex}.{ext}"
+    dest = os.path.join(folder, saved_name)
+
+    if ext == 'pdf':
+        file_storage.save(dest)
+        filetype = 'pdf'
+    else:
+        try:
+            from PIL import Image
+            img = Image.open(file_storage.stream)
+            img.verify()
+            file_storage.stream.seek(0)
+            img = Image.open(file_storage.stream)
+            img.thumbnail((1400, 1400))
+            if img.mode in ('RGBA', 'P'):
+                img = img.convert('RGB')
+            img.save(dest, optimize=True)
+        except ImportError:
+            file_storage.stream.seek(0)
+            file_storage.save(dest)
+        except Exception:
+            raise ValueError('Arquivo de imagem inválido ou corrompido.')
+        filetype = 'image'
+
+    return {
+        'filepath': f'uploads/tasks/{task_id}/{saved_name}',
+        'filetype': filetype,
+        'filename': original_name,
+    }

@@ -143,4 +143,63 @@
   </div>
 
 </div>
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+(function() {
+  var raw  = {{ chart_data | safe }};
+  var isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  var gridColor = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  var textColor = isDark ? '#9ba3bd' : '#5a6080';
+
+  var ctx = document.getElementById('activityChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: raw.labels,
+      datasets: [
+        {
+          label: 'Criadas',
+          data:  raw.created,
+          borderColor: '#6c63ff',
+          backgroundColor: 'rgba(108,99,255,.12)',
+          borderWidth: 2,
+          pointBackgroundColor: '#6c63ff',
+          pointRadius: 4,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'Concluídas',
+          data:  raw.done,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16,185,129,.08)',
+          borderWidth: 2,
+          pointBackgroundColor: '#10b981',
+          pointRadius: 4,
+          fill: true,
+          tension: 0.4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: textColor, boxWidth: 12, padding: 20 } },
+        tooltip: { mode: 'index', intersect: false },
+      },
+      scales: {
+        x: { grid: { color: gridColor }, ticks: { color: textColor } },
+        y: { grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1, precision: 0 }, beginAtZero: true },
+      },
+    },
+  });
+
+  // Re-renderiza ao trocar tema
+  document.documentElement.addEventListener && (function() {
+    var observer = new MutationObserver(function() { location.reload(); });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  })();
+})();
+</script>
 {% endblock %}

@@ -21,6 +21,236 @@
   --shadow-lg: 0 8px 48px rgba(0,0,0,.6);
 }
 
+
+/* ── Tema Claro ─────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:       #f0f2f8;
+  --surface:  #ffffff;
+  --surface2: #f4f6fb;
+  --surface3: #e8eaf4;
+  --border:   #dde1f0;
+  --border2:  #c8cde3;
+  --accent:   #6c63ff;
+  --accent2:  #7c74ff;
+  --accent-glow: rgba(108,99,255,.18);
+  --green:  #059669;  --yellow: #d97706;
+  --red:    #dc2626;  --blue:   #2563eb;
+  --text:  #1a1d2e;  --text2: #4a5170;  --text3: #8b93b5;
+  --shadow:    0 4px 24px rgba(100,110,160,.12);
+  --shadow-lg: 0 8px 48px rgba(100,110,160,.2);
+}
+
+/* Ajustes pontuais para o tema claro */
+[data-theme="light"] .sidebar {
+  background: var(--surface);
+  border-right-color: var(--border);
+  box-shadow: 4px 0 20px rgba(100,110,160,.08);
+}
+[data-theme="light"] .topbar {
+  background: var(--surface);
+  box-shadow: 0 2px 12px rgba(100,110,160,.08);
+}
+[data-theme="light"] .card {
+  box-shadow: 0 2px 12px rgba(100,110,160,.08);
+}
+[data-theme="light"] .stat-card {
+  box-shadow: 0 2px 12px rgba(100,110,160,.08);
+}
+[data-theme="light"] .btn-secondary {
+  background: var(--surface2);
+  border-color: var(--border2);
+  color: var(--text);
+}
+[data-theme="light"] .btn-secondary:hover {
+  background: var(--surface3);
+}
+[data-theme="light"] select option {
+  background: #ffffff;
+  color: var(--text);
+}
+[data-theme="light"] .status-select {
+  background: var(--surface2);
+}
+[data-theme="light"] .search-input {
+  background: var(--surface2);
+}
+[data-theme="light"] .user-card {
+  background: var(--surface2);
+}
+[data-theme="light"] .nav-link:hover {
+  background: var(--surface2);
+}
+[data-theme="light"] .nav-link.active {
+  background: linear-gradient(135deg,rgba(108,99,255,.12),rgba(124,116,255,.06));
+}
+[data-theme="light"] .sidebar-toggle {
+  background: var(--surface2);
+  border-color: var(--border);
+}
+[data-theme="light"] input[type=text],
+[data-theme="light"] input[type=email],
+[data-theme="light"] input[type=password],
+[data-theme="light"] input[type=date],
+[data-theme="light"] input[type=number],
+[data-theme="light"] select,
+[data-theme="light"] textarea {
+  background: var(--surface);
+  border-color: var(--border2);
+  color: var(--text);
+}
+[data-theme="light"] .task-card,
+[data-theme="light"] .user-mobile-card,
+[data-theme="light"] .task-mobile-card {
+  box-shadow: 0 2px 10px rgba(100,110,160,.08);
+}
+/* ── Tema claro: páginas de autenticação ──────────────────── */
+[data-theme="light"] .auth-page {
+  background: #eef0f8;
+}
+
+/* Painel esquerdo — gradiente vibrante, totalmente opaco */
+[data-theme="light"] .auth-left {
+  background: linear-gradient(145deg, #5b52f0 0%, #7c74ff 45%, #a78bfa 100%);
+  border-right: none;
+}
+[data-theme="light"] .auth-left .grid-bg {
+  background-image: linear-gradient(rgba(255,255,255,.08) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(255,255,255,.08) 1px, transparent 1px);
+}
+[data-theme="light"] .auth-left .glow-1 {
+  background: radial-gradient(circle, rgba(255,255,255,.18) 0%, transparent 70%);
+}
+[data-theme="light"] .auth-left .glow-2 {
+  background: radial-gradient(circle, rgba(255,255,255,.12) 0%, transparent 70%);
+}
+/* Textos do painel esquerdo — brancos sobre o gradiente */
+[data-theme="light"] .auth-brand {
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,.85) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+[data-theme="light"] .auth-tagline { color: rgba(255,255,255,.85); }
+[data-theme="light"] .feature-text h4,
+[data-theme="light"] .step-text h4  { color: #fff; }
+[data-theme="light"] .feature-text p,
+[data-theme="light"] .step-text p   { color: rgba(255,255,255,.75); }
+[data-theme="light"] .feature-icon {
+  background: rgba(255,255,255,.18);
+  color: #fff;
+}
+[data-theme="light"] .step-num {
+  background: rgba(255,255,255,.18);
+  border-color: rgba(255,255,255,.35);
+  color: #fff;
+}
+[data-theme="light"] .step-item:not(:last-child)::after {
+  background: linear-gradient(to bottom, rgba(255,255,255,.3), transparent);
+}
+
+/* Painel direito — fundo levemente acinzentado */
+[data-theme="light"] .auth-right {
+  background: #eef0f8;
+}
+
+/* Caixa do formulário — branco puro com sombra suave */
+[data-theme="light"] .auth-form-box {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 48px rgba(80,90,160,.14), 0 2px 12px rgba(80,90,160,.08);
+  padding: 40px;
+}
+[data-theme="light"] .auth-header h1 { color: #1a1d2e; }
+[data-theme="light"] .auth-header p  { color: #5a6080; }
+
+/* Inputs dentro do formulário */
+[data-theme="light"] .auth-form-box input[type=email],
+[data-theme="light"] .auth-form-box input[type=password],
+[data-theme="light"] .auth-form-box input[type=text] {
+  background: #f7f8fc;
+  border-color: #dde1f0;
+  color: #1a1d2e;
+}
+[data-theme="light"] .auth-form-box input:focus {
+  background: #fff;
+  border-color: var(--accent);
+}
+[data-theme="light"] .auth-form-box .input-icon { color: #8b93b5; }
+[data-theme="light"] .auth-form-box label { color: #3a4060; }
+
+/* Divisor e rodapé */
+[data-theme="light"] .auth-divider::before,
+[data-theme="light"] .auth-divider::after { background: #dde1f0; }
+[data-theme="light"] .auth-divider span { color: #9ba3bd; }
+[data-theme="light"] .auth-footer { color: #5a6080; }
+[data-theme="light"] .auth-footer a { color: var(--accent); }
+
+/* Caixa de demo */
+[data-theme="light"] .demo-box {
+  background: #f0f2fb;
+  border-color: #dde1f0;
+  color: #5a6080;
+}
+[data-theme="light"] .demo-box strong { color: var(--accent); }
+
+/* Checkbox */
+[data-theme="light"] .auth-form-box .checkbox-label { color: #5a6080; }
+[data-theme="light"] .equip-card,
+[data-theme="light"] .equip-card-icon {
+  background: var(--surface2);
+}
+[data-theme="light"] .file-drop-area {
+  background: var(--surface2);
+}
+[data-theme="light"] .toast {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 4px 20px rgba(100,110,160,.2);
+}
+[data-theme="light"] table thead tr {
+  background: var(--surface2);
+}
+[data-theme="light"] table tbody tr:hover {
+  background: var(--surface2);
+}
+
+/* ── Botão de alternância de tema ──────────────────────────── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all .2s;
+  width: 100%;
+  margin-top: 8px;
+}
+.theme-toggle:hover {
+  background: var(--surface3);
+  color: var(--text);
+  border-color: var(--border2);
+}
+.theme-toggle .theme-icon { font-size: 15px; transition: transform .4s ease; }
+.theme-toggle:hover .theme-icon { transform: rotate(20deg); }
+.theme-toggle .theme-label { flex: 1; text-align: left; }
+
+/* Transição suave ao trocar tema */
+*, *::before, *::after {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: .25s;
+  transition-timing-function: ease;
+}
+/* Exceções — não animar transforms e layouts */
+.progress-fill, .sidebar, .sidebar-overlay, .toast,
+button, a, input, select, textarea {
+  transition: all .2s;
+}
 /* ── Reset ──────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -432,7 +662,7 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 .step-text h4 { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .step-text p  { font-size: 13px; color: var(--text3); }
 .auth-right { display:flex; align-items:center; justify-content:center; padding:40px 48px; flex:1; min-width:0; }
-.auth-form-box { width: 100%; max-width: 380px; }
+.auth-form-box { width: 100%; max-width: 480px; }
 .auth-header { margin-bottom: 32px; }
 .auth-header h1 { font-family:var(--font-display); font-size:26px; font-weight:800; margin-bottom:6px; }
 .auth-header p  { font-size: 14px; color: var(--text2); }
@@ -1017,7 +1247,19 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
   .form-actions { flex-direction: column-reverse; }
   .form-actions .btn { width: 100%; justify-content: center; }
 
-  .auth-right { padding: 28px 20px; }
+  .auth-right {
+    padding: 24px 16px;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+  }
+  .auth-form-box {
+    max-width: 100%;               /* ocupa a largura disponível */
+    margin: 0 auto;                /* centraliza */
+  }
+  [data-theme="light"] .auth-form-box {
+    padding: 28px 24px;            /* padding menor no mobile */
+  }
 
   .page-content { padding: 12px; }
   .card-header  { padding: 16px; }
@@ -1058,4 +1300,52 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
   background: rgba(234,179,8,.15);
   color: #ca8a04;
   border: 1px solid rgba(234,179,8,.3);
+}
+
+/* ── Área de drop de arquivos ─────────────────────────────────────────────── */
+.file-drop-area {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  transition: border-color .2s, background .2s;
+  cursor: pointer;
+}
+.file-drop-area:hover {
+  border-color: var(--accent);
+  background: rgba(99,102,241,.04);
+}
+
+/* ── Thumbnail de imagem em ação ──────────────────────────────────────────── */
+.attachment-thumb img:hover { opacity: .85; transform: scale(1.04); transition: .15s; }
+
+/* ── Linha de ação no histórico ───────────────────────────────────────────── */
+.action-item:last-child { border-bottom: none !important; }
+
+/* ════════════════════════════════════════════════════════
+   PAGINAÇÃO + FILTROS
+════════════════════════════════════════════════════════ */
+.pagination-wrap {
+  display: flex; align-items: center; justify-content: center;
+  gap: 6px; padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+.pagination-ellipsis { color: var(--text3); font-size: 14px; padding: 0 4px; }
+
+.filters-form { margin-bottom: 20px; }
+.filters-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.filter-select {
+  padding: 7px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface2);
+  color: var(--text); font-size: 13px; cursor: pointer;
+  outline: none; transition: border-color .2s;
+  min-width: 160px;
+}
+.filter-select:focus { border-color: var(--accent); }
+
+[data-theme="light"] .filter-select {
+  background: var(--surface);
+  border-color: var(--border2);
 }

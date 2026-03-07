@@ -1,7 +1,8 @@
 import os
+from datetime import timedelta
 from flask import Flask
 from werkzeug.middleware.proxy_fix import ProxyFix
-from extensions import db, login_manager
+from extensions import db, login_manager, mail, csrf, limiter
 
 # Carrega variáveis do .env
 try:
@@ -31,6 +32,7 @@ def create_app():
     app.config['UPLOAD_FOLDER']      = os.path.join(app.root_path, 'static', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'tasks'), exist_ok=True)
 
     # Pool de conexões — aplicado apenas quando usar PostgreSQL
     if database_url.startswith('postgresql'):
@@ -48,6 +50,17 @@ def create_app():
         app.config['SESSION_COOKIE_SAMESITE']     = 'Lax'
         app.config['PERMANENT_SESSION_LIFETIME']  = 86400  # 1 dia
 
+
+    # ── E-mail (Flask-Mail) ────────────────────────────────────────────────────
+    # Configure no .env: MAIL_SERVER, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD
+    app.config['MAIL_SERVER']         = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT']           = int(os.environ.get('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS']        = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    app.config['MAIL_USERNAME']       = os.environ.get('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD']       = os.environ.get('MAIL_PASSWORD', '')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@taskflow.app')
+    app.config['MAIL_SUPPRESS_SEND']  = not bool(os.environ.get('MAIL_USERNAME'))  # silencia em dev
+
     # ── Extensions ────────────────────────────────────────────────────────────
     # ProxyFix: faz request.scheme refletir o protocolo real (HTTP/HTTPS)
     # quando a app está atrás do Nginx. Necessário para SESSION_COOKIE_SECURE
@@ -56,6 +69,9 @@ def create_app():
 
     db.init_app(app)
     login_manager.init_app(app)
+    mail.init_app(app)
+    csrf.init_app(app)
+    limiter.init_app(app)
     login_manager.login_view             = 'auth.login'
     login_manager.login_message          = 'Por favor, faça login para acessar esta página.'
     login_manager.login_message_category = 'info'
@@ -69,6 +85,26 @@ def create_app():
             count = User.query.filter_by(role='user', was_approved=False).count()
             return {'pending_count': count}
         return {'pending_count': 0}
+
+
+    # ── Filtro Jinja2 — converte UTC → horário de Brasília (UTC-3) ────────────
+    @app.template_filter('br_datetime')
+    def br_datetime_filter(dt, fmt='%d/%m/%Y às %H:%M'):
+        """Converte datetime UTC para horário de Brasília (UTC-3) antes de formatar."""
+        if dt is None:
+            return ''
+        br_time = dt - timedelta(hours=3)
+        return br_time.strftime(fmt)
+
+    @app.template_filter('br_date')
+    def br_date_filter(dt, fmt='%d/%m/%Y'):
+        """Converte date/datetime UTC para horário de Brasília e retorna só a data."""
+        if dt is None:
+            return ''
+        if hasattr(dt, 'hour'):          # é datetime
+            br_time = dt - timedelta(hours=3)
+            return br_time.strftime(fmt)
+        return dt.strftime(fmt)          # já é date, não tem fuso
 
     # ── Blueprints ────────────────────────────────────────────────────────────
     from blueprints.auth      import auth_bp

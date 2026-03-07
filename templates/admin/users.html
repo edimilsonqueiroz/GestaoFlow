@@ -51,11 +51,13 @@
           </td>
           <td class="text-muted fs-13">{{ user.email }}</td>
           <td class="text-muted fs-13">
-            {{ user.created_at.strftime('%d/%m/%Y às %H:%M') }}
+            {{ user.created_at| br_datetime }}</td>
+            <td class="text-muted fs-13">{{ user.last_login | br_datetime if user.last_login else "Nunca" }}
           </td>
           <td>
             <div class="flex gap-2" style="justify-content:center">
               <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-success btn-sm"
                         title="Aprovar acesso de {{ user.name }}">
                   <i class="fas fa-check"></i> Aprovar
@@ -63,6 +65,7 @@
               </form>
               <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}"
                     data-confirm="Rejeitar e remover o cadastro de {{ user.name }}?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger btn-sm btn-icon"
                         title="Rejeitar cadastro">
                   <i class="fas fa-times"></i>
@@ -94,17 +97,20 @@
       </div>
       <div class="text-muted fs-12" style="margin:8px 0 14px">
         <i class="fas fa-clock" style="margin-right:4px"></i>
-        Cadastrado em {{ user.created_at.strftime('%d/%m/%Y às %H:%M') }}
+        Cadastrado em {{ user.created_at| br_datetime }}</td>
+            <td class="text-muted fs-13">{{ user.last_login | br_datetime if user.last_login else "Nunca" }}
       </div>
       <div class="umc-actions">
         <form method="POST" action="{{ url_for('admin.approve_user', user_id=user.id) }}"
               style="flex:1">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-success btn-sm" style="width:100%;justify-content:center">
             <i class="fas fa-check"></i> Aprovar Acesso
           </button>
         </form>
         <form method="POST" action="{{ url_for('admin.reject_user', user_id=user.id) }}"
               data-confirm="Rejeitar e remover o cadastro de {{ user.name }}?">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Rejeitar">
             <i class="fas fa-times"></i>
           </button>
@@ -185,6 +191,7 @@
                 <i class="fas fa-pen"></i>
               </a>
               <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit"
                         class="btn btn-sm btn-icon {{ 'btn-danger' if user.is_active_account else 'btn-success' }}"
                         title="{{ 'Desativar' if user.is_active_account else 'Ativar' }}">
@@ -193,6 +200,7 @@
               </form>
               <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
                     data-confirm="Remover {{ user.name }}? As tarefas serão desvinculadas.">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Excluir">
                   <i class="fas fa-trash"></i>
                 </button>
@@ -251,6 +259,7 @@
           <i class="fas fa-pen"></i> Editar
         </a>
         <form method="POST" action="{{ url_for('admin.toggle_user', user_id=user.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-sm btn-icon {{ 'btn-danger' if user.is_active_account else 'btn-success' }}"
                   title="{{ 'Desativar' if user.is_active_account else 'Ativar' }}">
             <i class="fas fa-{{ 'ban' if user.is_active_account else 'check' }}"></i>
@@ -258,6 +267,7 @@
         </form>
         <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}"
               data-confirm="Remover {{ user.name }}? As tarefas serão desvinculadas.">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Excluir">
             <i class="fas fa-trash"></i>
           </button>

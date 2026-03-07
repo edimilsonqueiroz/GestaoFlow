@@ -1,3 +1,32 @@
+// ── CSRF token para chamadas AJAX ─────────────────────────────────────────────
+function getCsrfToken() {
+  var meta = document.querySelector('meta[name="csrf-token"]');
+  return meta ? meta.getAttribute('content') : '';
+}
+
+
+/* handleStatusChange: intercepta mudança rápida no dashboard do usuário.
+   Se o novo status for 'done', redireciona para a página de detalhes
+   para que o usuário registre a ação antes de concluir. */
+window.handleStatusChange = function(taskId, newStatus, selectEl) {
+  if (newStatus === 'done') {
+    // Força ir para detalhes — não conclui sem registrar ação
+    if (confirm('Ao concluir a tarefa você precisará registrar o que foi feito.\n\nDeseja ir para a página de detalhes?')) {
+      window.location.href = '/tasks/' + taskId;
+    } else {
+      // Reverte o select para o valor anterior
+      if (selectEl) {
+        var prev = selectEl.dataset.prev || 'in_progress';
+        selectEl.value = prev;
+      }
+    }
+    return;
+  }
+  // Guarda valor anterior para possível reversão
+  if (selectEl) selectEl.dataset.prev = selectEl.value;
+  updateTaskStatus(taskId, newStatus, selectEl);
+};
+
 /**
  * TaskFlow — main.js
  * Global UI behaviors: sidebar, alerts, toast, filters, status update

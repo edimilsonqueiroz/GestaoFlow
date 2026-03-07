@@ -190,7 +190,12 @@ def cancel_reservation(res_id):
     if res.user_id != current_user.id and not current_user.is_admin:
         flash('Sem permissao para cancelar esta reserva.', 'danger')
         return redirect(url_for('lab.index'))
+    motivo = request.form.get('motivo', '').strip()
+    if not motivo:
+        flash('Informe o motivo do cancelamento.', 'danger')
+        return redirect(request.form.get('next') or url_for('lab.index'))
     res.status = 'cancelled'
+    res.notes  = (res.notes + ' ' if res.notes else '') + f'[Cancelado: {motivo}]'
     db.session.commit()
     flash('Reserva cancelada com sucesso.', 'success')
     return redirect(request.form.get('next') or url_for('lab.index'))
