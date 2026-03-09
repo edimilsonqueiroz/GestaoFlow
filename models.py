@@ -179,7 +179,9 @@ class Reservation(db.Model):
     start_time   = db.Column(db.Time,    nullable=False)   # min(slots.start_time)
     end_time     = db.Column(db.Time,    nullable=False)   # max(slots.end_time)
     notes        = db.Column(db.String(300))
-    status       = db.Column(db.String(20), default='confirmed', index=True)  # confirmed|cancelled|expired
+    status       = db.Column(db.String(20), default='confirmed', index=True)  # confirmed|in_use|returned|cancelled|expired
+    started_at   = db.Column(db.DateTime, nullable=True)   # quando foi retirado
+    returned_at  = db.Column(db.DateTime, nullable=True)   # quando foi devolvido
     created_at   = db.Column(db.DateTime, default=datetime.utcnow)
 
     user  = db.relationship('User', backref='reservations', lazy=True)
@@ -206,6 +208,10 @@ class Reservation(db.Model):
     @property
     def slots_label(self):
         return ', '.join(s.description for s in sorted(self.slots, key=lambda x: x.start_time))
+
+    @property
+    def status_label(self):
+        return {'confirmed':'Confirmada','in_use':'Em Uso','returned':'Devolvido','cancelled':'Cancelada','expired':'Expirada'}.get(self.status, self.status)
 
     def __repr__(self): return f'<Reservation {self.id}: {self.date} {self.time_range}>'
 
@@ -260,7 +266,9 @@ class LabReservation(db.Model):
     start_time = db.Column(db.Time,    nullable=False)
     end_time   = db.Column(db.Time,    nullable=False)
     notes      = db.Column(db.String(300))
-    status     = db.Column(db.String(20), default='confirmed', index=True)  # confirmed|cancelled|expired
+    status     = db.Column(db.String(20), default='confirmed', index=True)  # confirmed|in_use|returned|cancelled|expired
+    started_at  = db.Column(db.DateTime, nullable=True)
+    returned_at = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user  = db.relationship('User', backref='lab_reservations', lazy=True)
@@ -288,6 +296,10 @@ class LabReservation(db.Model):
     @property
     def slots_label(self):
         return ', '.join(s.description for s in sorted(self.slots, key=lambda x: x.start_time))
+
+    @property
+    def status_label(self):
+        return {'confirmed':'Confirmada','in_use':'Em Uso','returned':'Devolvido','cancelled':'Cancelada','expired':'Expirada'}.get(self.status, self.status)
 
     def __repr__(self): return f'<LabReservation {self.id}: {self.date} {self.time_range}>'
 

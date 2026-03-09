@@ -81,68 +81,62 @@ def dashboard():
         Task.status != 'done'
     ).order_by(Task.created_at.desc()).all()
 
-    # ── Gráfico de reservas por equipamento no mês atual ─────────────────────
-    _MESES_PT = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
-                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
-    month_ref  = request.args.get('res_month', today.strftime('%Y-%m'))
-    try:
-        month_date = _date.fromisoformat(month_ref + '-01')
-    except ValueError:
-        month_date = today.replace(day=1)
+    # ── Gráfico de reservas por dia da semana ─────────────────────────────────
+    from models import LabReservation
+    from blueprints.utils import week_days as _week_days, parse_date as _parse_date_util2
 
-    month_start = month_date.replace(day=1)
-    # Último dia do mês
-    if month_date.month == 12:
-        month_end = month_date.replace(year=month_date.year+1, month=1, day=1) - _td(days=1)
-    else:
-        month_end = month_date.replace(month=month_date.month+1, day=1) - _td(days=1)
+    _DIAS_PT = ['Segunda','Terça','Quarta','Quinta','Sexta']
 
-    # Busca reservas do mês agrupadas por equipamento — uma query só
-    from sqlalchemy import extract, case as _case
-    rows = (
-        db.session.query(
-            Equipment.name,
-            func.sum(_case((Reservation.status.in_(['confirmed', 'expired']), 1), else_=0)).label('confirmed'),
-            func.sum(_case((Reservation.status == 'cancelled', 1), else_=0)).label('cancelled'),
-        )
-        .join(Reservation, Reservation.equipment_id == Equipment.id)
-        .filter(
-            extract('year',  Reservation.date) == month_date.year,
-            extract('month', Reservation.date) == month_date.month,
-        )
-        .group_by(Equipment.id, Equipment.name)
-        .order_by(Equipment.name)
-        .all()
-    )
+    res_week_ref = request.args.get('res_week')
+    res_ref      = _parse_date_util2(res_week_ref) or today
+    res_days     = _week_days(res_ref)   # lista de 5 dates (seg–sex)
+    monday_this  = today - _td(days=today.weekday())
 
-    equip_labels    = [r.name      for r in rows]
-    equip_confirmed = [r.confirmed for r in rows]
-    equip_cancelled = [r.cancelled for r in rows]
-
-    # Meses para navegação (últimos 6)
-    month_options = []
-    for i in range(5, -1, -1):
-        m = today.replace(day=1)
-        for _ in range(i):
-            m = (m - _td(days=1)).replace(day=1)
-        month_options.append({
-            'value': m.strftime('%Y-%m'),
-            'label': f"{_MESES_PT[m.month]}/{m.year}",
+    # Seletor: semana atual + 4 anteriores
+    week_options = []
+    for i in range(4, -1, -1):
+        mon = monday_this - _td(weeks=i)
+        fri = mon + _td(days=4)
+        week_options.append({
+            'value': mon.isoformat(),
+            'label': f"{mon.strftime('%d/%m')} – {fri.strftime('%d/%m/%Y')}",
         })
 
+    # Contagem por dia — equipamentos e laboratórios separados
+    res_labels       = []
+    res_equip_counts = []
+    res_lab_counts   = []
+    active = ['confirmed', 'in_use', 'returned']
+
+    for d in res_days:
+        res_labels.append(f"{_DIAS_PT[d.weekday()]}\n{d.strftime('%d/%m')}")
+        res_equip_counts.append(
+            Reservation.query.filter(Reservation.date == d,
+                                     Reservation.status.in_(active)).count()
+        )
+        res_lab_counts.append(
+            LabReservation.query.filter(LabReservation.date == d,
+                                        LabReservation.status.in_(active)).count()
+        )
+
+    monday_iso = res_days[0].isoformat()
     equip_chart_data = _json.dumps({
-        'labels':    equip_labels,
-        'confirmed': equip_confirmed,
-        'cancelled': equip_cancelled,
-        'month':     f"{_MESES_PT[month_date.month]} de {month_date.year}",
+        'labels':       res_labels,
+        'equipamentos': res_equip_counts,
+        'laboratorios': res_lab_counts,
+        'week_label':   f"{res_days[0].strftime('%d/%m')} – {res_days[4].strftime('%d/%m/%Y')}",
     })
 
     return render_template('admin/dashboard.html',
         users=users, recent_tasks=recent, stats=stats,
         chart_data=chart_data, unassigned_tasks=unassigned,
         equip_chart_data=equip_chart_data,
-        equip_has_data=bool(equip_labels),
-        month_ref=month_ref, month_options=month_options)
+        equip_has_data=True,
+        res_week_ref=monday_iso,
+        week_options=week_options,
+        prev_week=(res_days[0] - _td(weeks=1)).isoformat(),
+        next_week=(res_days[0] + _td(weeks=1)).isoformat(),
+        is_current_week=(res_days[0] == monday_this))
 
 
 # ─── Tasks ────────────────────────────────────────────────────────────────────

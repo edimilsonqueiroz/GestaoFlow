@@ -54,8 +54,9 @@
           <th>Data</th>
           <th>Período</th>
           <th>Horários</th>
+          <th>Status</th>
           <th>Observação</th>
-          <th>Ações</th>
+          <th style="width:130px">Ações</th>
         </tr>
       </thead>
       <tbody>
@@ -84,14 +85,47 @@
           </td>
           <td><span class="fs-13">{{ res.period_label }}</span></td>
           <td><span class="text-muted fs-12">{{ res.slots_label }}</span></td>
+          <td>
+            <span class="badge badge-res-{{ res.status }}">{{ res.status_label }}</span>
+            {% if res.started_at %}
+              <div class="text-muted fs-11 mt-1">↑ {{ res.started_at | br_datetime }}</div>
+            {% endif %}
+            {% if res.returned_at %}
+              <div class="text-muted fs-11">↓ {{ res.returned_at | br_datetime }}</div>
+            {% endif %}
+          </td>
           <td><span class="text-muted fs-13">{{ res.notes or '—' }}</span></td>
           <td>
-            <button type="button" class="btn btn-danger btn-sm btn-icon" title="Cancelar"
-              data-res-id="{{ res.id }}"
-              data-res-label="{{ res.user.name }} · {{ res.date.strftime('%d/%m/%Y') }}"
-              onclick="openCancelModal(this.dataset.resId, this.dataset.resLabel)">
-              <i class="fas fa-times"></i>
-            </button>
+            <div class="flex gap-1">
+              {% if res.status == 'confirmed' %}
+              <form method="POST" action="{{ url_for('lab.start_reservation', res_id=res.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.url }}">
+                <button type="submit" class="btn btn-sm" title="Registrar início de uso"
+                        style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)">
+                  <i class="fas fa-sign-out-alt"></i>
+                </button>
+              </form>
+              {% endif %}
+              {% if res.status == 'in_use' %}
+              <form method="POST" action="{{ url_for('lab.return_reservation', res_id=res.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="next" value="{{ request.url }}">
+                <button type="submit" class="btn btn-sm" title="Registrar devolução"
+                        style="background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)">
+                  <i class="fas fa-sign-in-alt"></i>
+                </button>
+              </form>
+              {% endif %}
+              {% if res.status in ('confirmed', 'in_use') %}
+              <button type="button" class="btn btn-danger btn-sm btn-icon" title="Cancelar"
+                data-res-id="{{ res.id }}"
+                data-res-label="{{ res.user.name }} · {{ res.date.strftime('%d/%m/%Y') }}"
+                onclick="openCancelModal(this.dataset.resId, this.dataset.resLabel)">
+                <i class="fas fa-times"></i>
+              </button>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% endfor %}
@@ -105,7 +139,7 @@
     <div class="user-mobile-card">
       <div class="umc-header">
         <div class="flex items-center gap-3" style="min-width:0">
-          <div class="lab-icon-badge">
+          <div class="lab-icon-badge" style="flex-shrink:0">
             <i class="fas fa-flask" style="color:#fff"></i>
           </div>
           <div style="min-width:0">
@@ -114,8 +148,8 @@
           </div>
         </div>
         <div style="flex-shrink:0;text-align:right">
-          <div class="fw-600 fs-13">{{ res.weekday_label }}</div>
-          <div class="text-muted fs-12">{{ res.date.strftime('%d/%m') }}</div>
+          <span class="badge badge-res-{{ res.status }}">{{ res.status_label }}</span>
+          <div class="text-muted fs-12 mt-1">{{ res.date.strftime('%d/%m') }}</div>
         </div>
       </div>
       <div class="umc-stats mb-3">
@@ -127,6 +161,18 @@
           <span class="umc-stat-label">Horários</span>
           <span class="umc-stat-value fs-12">{{ res.slots_label }}</span>
         </div>
+        {% if res.started_at %}
+        <div class="umc-stat">
+          <span class="umc-stat-label">Retirada</span>
+          <span class="umc-stat-value fs-12">{{ res.started_at | br_datetime }}</span>
+        </div>
+        {% endif %}
+        {% if res.returned_at %}
+        <div class="umc-stat">
+          <span class="umc-stat-label">Devolução</span>
+          <span class="umc-stat-value fs-12">{{ res.returned_at | br_datetime }}</span>
+        </div>
+        {% endif %}
         {% if res.notes %}
         <div class="umc-stat">
           <span class="umc-stat-label">Observação</span>
@@ -134,13 +180,35 @@
         </div>
         {% endif %}
       </div>
-      <div class="umc-actions">
-        <button type="button" class="btn btn-danger btn-sm" style="width:100%;justify-content:center"
+      <div class="umc-actions" style="gap:8px">
+        {% if res.status == 'confirmed' %}
+        <form method="POST" action="{{ url_for('lab.start_reservation', res_id=res.id) }}" style="flex:1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ request.url }}">
+          <button type="submit" class="btn btn-sm w-full"
+                  style="background:rgba(245,158,11,.15);color:#f59e0b;border:1px solid rgba(245,158,11,.3)">
+            <i class="fas fa-sign-out-alt"></i> Registrar Retirada
+          </button>
+        </form>
+        {% endif %}
+        {% if res.status == 'in_use' %}
+        <form method="POST" action="{{ url_for('lab.return_reservation', res_id=res.id) }}" style="flex:1">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="next" value="{{ request.url }}">
+          <button type="submit" class="btn btn-sm w-full"
+                  style="background:rgba(16,185,129,.15);color:#10b981;border:1px solid rgba(16,185,129,.3)">
+            <i class="fas fa-sign-in-alt"></i> Registrar Devolução
+          </button>
+        </form>
+        {% endif %}
+        {% if res.status in ('confirmed', 'in_use') %}
+        <button type="button" class="btn btn-danger btn-sm" style="flex:1"
             data-res-id="{{ res.id }}"
             data-res-label="{{ res.user.name }} · {{ res.date.strftime('%d/%m/%Y') }}"
             onclick="openCancelModal(this.dataset.resId, this.dataset.resLabel)">
-          <i class="fas fa-times"></i> Cancelar reserva
+          <i class="fas fa-times"></i> Cancelar
         </button>
+        {% endif %}
       </div>
     </div>
     {% endfor %}
@@ -164,13 +232,10 @@
     <input type="hidden" name="next" value="{{ request.url }}">
     <div class="modal-body">
       <div class="form-group">
-        <label for="cancelMotivo">
-          Motivo do cancelamento <span style="color:var(--red)">*</span>
-        </label>
+        <label for="cancelMotivo">Motivo do cancelamento <span style="color:var(--red)">*</span></label>
         <textarea id="cancelMotivo" name="motivo" rows="3"
                   placeholder="Descreva o motivo do cancelamento..."
-                  style="width:100%;resize:vertical"
-                  required></textarea>
+                  style="width:100%;resize:vertical" required></textarea>
         <div class="hint mt-1">Campo obrigatório — o motivo será registrado na reserva.</div>
       </div>
     </div>

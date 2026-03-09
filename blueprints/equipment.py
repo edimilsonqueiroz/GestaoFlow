@@ -277,6 +277,38 @@ def cancel_reservation(res_id):
     return redirect(request.form.get('next') or url_for('equipment.index'))
 
 
+@equipment_bp.route('/equipamentos/reservas/<int:res_id>/iniciar', methods=['POST'])
+@login_required
+def start_reservation(res_id):
+    redir = admin_required_redirect()
+    if redir: return redir
+    res = Reservation.query.get_or_404(res_id)
+    if res.status != 'confirmed':
+        flash('Só é possível iniciar reservas confirmadas.', 'danger')
+        return redirect(request.form.get('next') or url_for('equipment.admin_reservations'))
+    res.status     = 'in_use'
+    res.started_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'Retirada registrada para {res.user.first_name} — {res.equipment.name}.', 'success')
+    return redirect(request.form.get('next') or url_for('equipment.admin_reservations'))
+
+
+@equipment_bp.route('/equipamentos/reservas/<int:res_id>/devolver', methods=['POST'])
+@login_required
+def return_reservation(res_id):
+    redir = admin_required_redirect()
+    if redir: return redir
+    res = Reservation.query.get_or_404(res_id)
+    if res.status != 'in_use':
+        flash('Só é possível registrar devolução de reservas em uso.', 'danger')
+        return redirect(request.form.get('next') or url_for('equipment.admin_reservations'))
+    res.status      = 'returned'
+    res.returned_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'Devolução registrada — {res.equipment.name}.', 'success')
+    return redirect(request.form.get('next') or url_for('equipment.admin_reservations'))
+
+
 # ════════════════════════════════════════════════════════════════════════════════
 # ADMIN — Equipamentos CRUD
 # ════════════════════════════════════════════════════════════════════════════════
@@ -380,7 +412,7 @@ def admin_reservations():
     reservations = Reservation.query.filter(
         Reservation.date >= days[0],
         Reservation.date <= days[4],
-        Reservation.status == 'confirmed',
+        Reservation.status.in_(['confirmed', 'in_use', 'returned']),
     ).order_by(Reservation.date, Reservation.start_time).all()
     return render_template('equipment/admin_reservations.html',
         reservations=reservations, days=days,

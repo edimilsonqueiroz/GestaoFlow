@@ -1349,3 +1349,10 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
   background: var(--surface);
   border-color: var(--border2);
 }
+
+/* ── Status de reserva ───────────────────────────────────────────────── */
+.badge-res-confirmed { background: rgba(59,130,246,.15); color: #3b82f6; }
+.badge-res-in_use    { background: rgba(245,158,11,.15); color: #f59e0b; }
+.badge-res-returned  { background: rgba(16,185,129,.15); color: #10b981; }
+.badge-res-cancelled { background: rgba(239,68,68,.15);  color: #ef4444; }
+.badge-res-expired   { background: rgba(155,163,189,.15);color: #9ba3bd; }

@@ -201,6 +201,38 @@ def cancel_reservation(res_id):
     return redirect(request.form.get('next') or url_for('lab.index'))
 
 
+@lab_bp.route('/laboratorios/reservas/<int:res_id>/iniciar', methods=['POST'])
+@login_required
+def start_reservation(res_id):
+    redir = admin_required_redirect()
+    if redir: return redir
+    res = LabReservation.query.get_or_404(res_id)
+    if res.status != 'confirmed':
+        flash('Só é possível iniciar reservas confirmadas.', 'danger')
+        return redirect(request.form.get('next') or url_for('lab.admin_reservations'))
+    res.status     = 'in_use'
+    res.started_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'Retirada registrada para {res.user.first_name} — {res.lab.name}.', 'success')
+    return redirect(request.form.get('next') or url_for('lab.admin_reservations'))
+
+
+@lab_bp.route('/laboratorios/reservas/<int:res_id>/devolver', methods=['POST'])
+@login_required
+def return_reservation(res_id):
+    redir = admin_required_redirect()
+    if redir: return redir
+    res = LabReservation.query.get_or_404(res_id)
+    if res.status != 'in_use':
+        flash('Só é possível registrar devolução de reservas em uso.', 'danger')
+        return redirect(request.form.get('next') or url_for('lab.admin_reservations'))
+    res.status      = 'returned'
+    res.returned_at = datetime.utcnow()
+    db.session.commit()
+    flash(f'Devolução registrada — {res.lab.name}.', 'success')
+    return redirect(request.form.get('next') or url_for('lab.admin_reservations'))
+
+
 # ════════════════════════════════════════════════════════════════════════════════
 # ADMIN — laboratórios CRUD
 # ════════════════════════════════════════════════════════════════════════════════
@@ -312,7 +344,7 @@ def admin_reservations():
     reservations = LabReservation.query.filter(
         LabReservation.date   >= days[0],
         LabReservation.date   <= days[4],
-        LabReservation.status == 'confirmed',
+        LabReservation.status.in_(['confirmed', 'in_use', 'returned']),
     ).order_by(LabReservation.date, LabReservation.start_time).all()
     return render_template('lab/admin_reservations.html',
         reservations=reservations, days=days,
