@@ -1,12 +1,12 @@
 from datetime import datetime
 from functools import wraps
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from extensions import db
 from blueprints.utils import parse_date as _parse_date_util
-from models import User, Task, TaskAction, TaskAttachment, Equipment, Reservation
-from blueprints.emails import send_account_approved, send_account_rejected, send_task_assigned, send_new_user_pending
+from models import User, Task, TaskAction, TaskAttachment, Reservation
+from blueprints.emails import send_account_rejected, send_task_assigned, send_new_user_pending
 
 admin_bp = Blueprint('admin', __name__)
 
