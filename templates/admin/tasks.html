@@ -110,7 +110,7 @@
   </div>
 
   {# ── Mobile: cards ───────────────────────────────────────────────────────── #}
-  <div class="tasks-mobile-list" style="padding:12px;display:none">
+  <div class="tasks-mobile-list">
     {% for task in tasks %}
     <div class="task-mobile-card" data-status="{{ task.status }}">
       <div class="tmc-priority-bar {{ task.priority }}"></div>

@@ -4,231 +4,234 @@
 
 {% block content %}
 
-<div class="reports-intro">
-  <i class="fas fa-info-circle"></i>
-  Selecione os filtros desejados e clique em <strong>Gerar PDF</strong>. O relatório será aberto em uma nova aba.
-  Só é possível gerar relatórios se houver dados no período selecionado.
+{# ── Banner informativo ─────────────────────────────────────────────────── #}
+<div class="rpt-banner">
+  <div class="rpt-banner-icon">
+    <i class="fas fa-file-export"></i>
+  </div>
+  <div class="rpt-banner-body">
+    <div class="rpt-banner-title">Geração de Relatórios em PDF</div>
+    <div class="rpt-banner-sub">
+      Configure os filtros abaixo e clique em <strong>Gerar PDF</strong>. 
+      O documento será aberto em uma nova aba para visualização e download.
+    </div>
+  </div>
 </div>
 
-<div class="reports-grid">
+{# ── Grid de relatórios ─────────────────────────────────────────────────── #}
+<div class="rpt-grid">
 
-  <!-- ── RESERVAS ────────────────────────────────────────────────────── -->
-  <div class="card reports-card">
-    <div class="reports-card-header reservas">
-      <div class="reports-card-icon"><i class="fas fa-calendar-check"></i></div>
-      <div>
-        <div class="reports-card-title">Reservas de Equipamentos</div>
-        <div class="reports-card-desc">Exporta reservas filtradas por período, usuário e status.</div>
+  {# ── Card: Reservas de Equipamentos ──────────────────────────────────── #}
+  <div class="rpt-card">
+    <div class="rpt-card-stripe rpt-stripe-equip"></div>
+    <div class="rpt-card-inner">
+
+      <div class="rpt-card-head">
+        <div class="rpt-card-badge rpt-badge-equip">
+          <i class="fas fa-box-open"></i>
+        </div>
+        <div class="rpt-card-meta">
+          <div class="rpt-card-title">Reservas de Equipamentos</div>
+          <div class="rpt-card-desc">Período, usuário e status</div>
+        </div>
+        <div class="rpt-card-tag rpt-tag-equip">PDF</div>
       </div>
-    </div>
 
-    <div class="card-body">
-      <form action="{{ url_for('reports.reservations_pdf') }}" method="GET" target="_blank"
-            class="reports-form" id="formReservas">
+      <form action="{{ url_for('reports.reservations_pdf') }}" method="GET" target="_blank">
 
-        <div class="reports-field-group">
-          <div class="reports-field-label">
-            <i class="fas fa-calendar-alt"></i> Período
+        <div class="rpt-section-label">
+          <i class="fas fa-calendar-alt"></i> Período
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-field">
+            <label>Data inicial</label>
+            <input type="date" name="date_from" class="rpt-input">
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>De</label>
-              <div class="input-group">
-                <i class="fas fa-calendar input-icon"></i>
-                <input type="date" name="date_from" id="rf_from">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Até</label>
-              <div class="input-group">
-                <i class="fas fa-calendar input-icon"></i>
-                <input type="date" name="date_to" id="rf_to">
-              </div>
-            </div>
+          <div class="rpt-field">
+            <label>Data final</label>
+            <input type="date" name="date_to" class="rpt-input">
           </div>
         </div>
 
-        <div class="reports-field-group">
-          <div class="reports-field-label">
-            <i class="fas fa-filter"></i> Filtros
+        <div class="rpt-section-label" style="margin-top:16px">
+          <i class="fas fa-sliders-h"></i> Filtros
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-field">
+            <label>Usuário</label>
+            <select name="user_id" class="rpt-input">
+              <option value="">Todos os usuários</option>
+              {% for u in users %}
+                <option value="{{ u.id }}">{{ u.name }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Usuário</label>
-              <select name="user_id">
-                <option value="">Todos os usuários</option>
-                {% for u in users %}
-                  <option value="{{ u.id }}">{{ u.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Status</label>
-              <select name="status">
-                <option value="all">Todos</option>
-                <option value="confirmed">Confirmadas</option>
-                <option value="cancelled">Canceladas</option>
-                <option value="expired">Expiradas</option>
-              </select>
-            </div>
+          <div class="rpt-field">
+            <label>Status</label>
+            <select name="status" class="rpt-input">
+              <option value="all">Todos</option>
+              <option value="confirmed">Confirmadas</option>
+              <option value="in_use">Em uso</option>
+              <option value="returned">Devolvidas</option>
+              <option value="cancelled">Canceladas</option>
+              <option value="expired">Expiradas</option>
+            </select>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-report">
-          <i class="fas fa-file-pdf"></i> Gerar PDF de Reservas
+        <button type="submit" class="rpt-btn rpt-btn-equip">
+          <i class="fas fa-file-pdf"></i>
+          <span>Gerar PDF de Equipamentos</span>
+          <i class="fas fa-arrow-right rpt-btn-arrow"></i>
         </button>
+
       </form>
     </div>
   </div>
 
+  {# ── Card: Reservas de Laboratórios ───────────────────────────────────── #}
+  <div class="rpt-card">
+    <div class="rpt-card-stripe rpt-stripe-lab"></div>
+    <div class="rpt-card-inner">
 
-  <!-- ── RESERVAS DE LABORATORIOS ──────────────────────────────────────── -->
-  <div class="card reports-card">
-    <div class="reports-card-header" style="background:linear-gradient(135deg,rgba(99,102,241,.15),rgba(139,92,246,.1));border-bottom:1px solid rgba(99,102,241,.2)">
-      <div class="reports-card-icon" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff"><i class="fas fa-flask"></i></div>
-      <div>
-        <div class="reports-card-title">Reservas de Laboratórios</div>
-        <div class="reports-card-desc">Exporta reservas de labs filtradas por período, usuário e status.</div>
+      <div class="rpt-card-head">
+        <div class="rpt-card-badge rpt-badge-lab">
+          <i class="fas fa-flask"></i>
+        </div>
+        <div class="rpt-card-meta">
+          <div class="rpt-card-title">Reservas de Laboratórios</div>
+          <div class="rpt-card-desc">Período, usuário e status</div>
+        </div>
+        <div class="rpt-card-tag rpt-tag-lab">PDF</div>
       </div>
-    </div>
 
-    <div class="card-body">
-      <form action="{{ url_for('reports.lab_reservations_pdf') }}" method="GET" target="_blank"
-            class="reports-form" id="formLabs">
+      <form action="{{ url_for('reports.lab_reservations_pdf') }}" method="GET" target="_blank">
 
-        <div class="reports-field-group">
-          <div class="reports-field-label">
-            <i class="fas fa-calendar-alt"></i> Período
+        <div class="rpt-section-label">
+          <i class="fas fa-calendar-alt"></i> Período
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-field">
+            <label>Data inicial</label>
+            <input type="date" name="date_from" class="rpt-input">
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>De</label>
-              <div class="input-group">
-                <i class="fas fa-calendar input-icon"></i>
-                <input type="date" name="date_from">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Até</label>
-              <div class="input-group">
-                <i class="fas fa-calendar input-icon"></i>
-                <input type="date" name="date_to">
-              </div>
-            </div>
+          <div class="rpt-field">
+            <label>Data final</label>
+            <input type="date" name="date_to" class="rpt-input">
           </div>
         </div>
 
-        <div class="reports-field-group">
-          <div class="reports-field-label">
-            <i class="fas fa-filter"></i> Filtros
+        <div class="rpt-section-label" style="margin-top:16px">
+          <i class="fas fa-sliders-h"></i> Filtros
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-field">
+            <label>Usuário</label>
+            <select name="user_id" class="rpt-input">
+              <option value="">Todos os usuários</option>
+              {% for u in users %}
+                <option value="{{ u.id }}">{{ u.name }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Usuário</label>
-              <select name="user_id">
-                <option value="">Todos os usuários</option>
-                {% for u in users %}
-                  <option value="{{ u.id }}">{{ u.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Status</label>
-              <select name="status">
-                <option value="all">Todos</option>
-                <option value="confirmed">Confirmadas</option>
-                <option value="cancelled">Canceladas</option>
-                <option value="expired">Expiradas</option>
-              </select>
-            </div>
+          <div class="rpt-field">
+            <label>Status</label>
+            <select name="status" class="rpt-input">
+              <option value="all">Todos</option>
+              <option value="confirmed">Confirmadas</option>
+              <option value="in_use">Em uso</option>
+              <option value="returned">Devolvidas</option>
+              <option value="cancelled">Canceladas</option>
+              <option value="expired">Expiradas</option>
+            </select>
           </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-report" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:#6366f1">
-          <i class="fas fa-file-pdf"></i> Gerar PDF de Reservas de Labs
+        <button type="submit" class="rpt-btn rpt-btn-lab">
+          <i class="fas fa-file-pdf"></i>
+          <span>Gerar PDF de Laboratórios</span>
+          <i class="fas fa-arrow-right rpt-btn-arrow"></i>
         </button>
+
       </form>
     </div>
   </div>
 
-  <!-- ── TAREFAS ─────────────────────────────────────────────────────── -->
-  <div class="card reports-card">
-    <div class="reports-card-header tarefas">
-      <div class="reports-card-icon"><i class="fas fa-tasks"></i></div>
-      <div>
-        <div class="reports-card-title">Tarefas</div>
-        <div class="reports-card-desc">Exporta tarefas filtradas por período de criação, responsável, status e prioridade.</div>
+  {# ── Card: Tarefas ────────────────────────────────────────────────────── #}
+  <div class="rpt-card">
+    <div class="rpt-card-stripe rpt-stripe-task"></div>
+    <div class="rpt-card-inner">
+
+      <div class="rpt-card-head">
+        <div class="rpt-card-badge rpt-badge-task">
+          <i class="fas fa-tasks"></i>
+        </div>
+        <div class="rpt-card-meta">
+          <div class="rpt-card-title">Tarefas</div>
+          <div class="rpt-card-desc">Período de criação, responsável, status e prioridade</div>
+        </div>
+        <div class="rpt-card-tag rpt-tag-task">PDF</div>
       </div>
-    </div>
 
-    <div class="card-body">
-      <form action="{{ url_for('reports.tasks_pdf') }}" method="GET" target="_blank"
-            class="reports-form" id="formTarefas">
+      <form action="{{ url_for('reports.tasks_pdf') }}" method="GET" target="_blank">
 
-        <div class="reports-field-group">
-          <div class="reports-field-label">
-            <i class="fas fa-calendar-alt"></i> Período de criação
+        <div class="rpt-section-label">
+          <i class="fas fa-calendar-alt"></i> Período de criação
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-field">
+            <label>Data inicial</label>
+            <input type="date" name="date_from" class="rpt-input">
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>De</label>
-              <div class="input-group">
-                <i class="fas fa-calendar input-icon"></i>
-                <input type="date" name="date_from">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Até</label>
-              <div class="input-group">
-                <i class="fas fa-calendar input-icon"></i>
-                <input type="date" name="date_to">
-              </div>
-            </div>
+          <div class="rpt-field">
+            <label>Data final</label>
+            <input type="date" name="date_to" class="rpt-input">
           </div>
         </div>
 
-        <div class="reports-field-group">
-          <div class="reports-field-label">
-            <i class="fas fa-filter"></i> Filtros
+        <div class="rpt-section-label" style="margin-top:16px">
+          <i class="fas fa-sliders-h"></i> Filtros
+        </div>
+        <div class="rpt-row">
+          <div class="rpt-field">
+            <label>Responsável</label>
+            <select name="user_id" class="rpt-input">
+              <option value="">Todos os usuários</option>
+              {% for u in users %}
+                <option value="{{ u.id }}">{{ u.name }}</option>
+              {% endfor %}
+            </select>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Responsável</label>
-              <select name="user_id">
-                <option value="">Todos os usuários</option>
-                {% for u in users %}
-                  <option value="{{ u.id }}">{{ u.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Status</label>
-              <select name="status">
-                <option value="all">Todos</option>
-                <option value="pending">Pendentes</option>
-                <option value="in_progress">Em Andamento</option>
-                <option value="done">Concluídas</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Prioridade</label>
-              <select name="priority">
-                <option value="all">Todas</option>
-                <option value="urgent">Urgente</option>
-                <option value="high">Alta</option>
-                <option value="medium">Média</option>
-                <option value="low">Baixa</option>
-              </select>
-            </div>
-            <div class="form-group"><!-- espaçador --></div>
+          <div class="rpt-field">
+            <label>Status</label>
+            <select name="status" class="rpt-input">
+              <option value="all">Todos</option>
+              <option value="pending">Pendentes</option>
+              <option value="in_progress">Em Andamento</option>
+              <option value="done">Concluídas</option>
+            </select>
           </div>
         </div>
+        <div class="rpt-row" style="margin-top:0">
+          <div class="rpt-field">
+            <label>Prioridade</label>
+            <select name="priority" class="rpt-input">
+              <option value="all">Todas</option>
+              <option value="urgent">🔴 Urgente</option>
+              <option value="high">🟠 Alta</option>
+              <option value="medium">🟡 Média</option>
+              <option value="low">🟢 Baixa</option>
+            </select>
+          </div>
+          <div class="rpt-field"><!-- espaçador --></div>
+        </div>
 
-        <button type="submit" class="btn btn-primary btn-report">
-          <i class="fas fa-file-pdf"></i> Gerar PDF de Tarefas
+        <button type="submit" class="rpt-btn rpt-btn-task">
+          <i class="fas fa-file-pdf"></i>
+          <span>Gerar PDF de Tarefas</span>
+          <i class="fas fa-arrow-right rpt-btn-arrow"></i>
         </button>
+
       </form>
     </div>
   </div>

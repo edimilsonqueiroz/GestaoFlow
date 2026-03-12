@@ -20,7 +20,7 @@
   </script>
 
   <!-- App styles -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v={{ range(1,9999) | random }}" />
 
   {% block extra_styles %}{% endblock %}
   <!-- CSRF token para chamadas AJAX -->

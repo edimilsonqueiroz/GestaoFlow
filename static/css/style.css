@@ -288,6 +288,28 @@ img { max-width: 100%; display: block; }
 }
 .sidebar-logo .logo-sub { font-size: 11px; color: var(--text3); letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px; }
 .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+
+/* ── Scrollbar da sidebar ────────────────────────────────────────────── */
+.sidebar-nav::-webkit-scrollbar         { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-track   { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb   {
+  background: var(--border);
+  border-radius: 99px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ── Scrollbar global (tabelas, modais, etc.) ───────────────────────── */
+::-webkit-scrollbar         { width: 6px; height: 6px; }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   {
+  background: rgba(108,99,255,.25);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(108,99,255,.55); }
+::-webkit-scrollbar-corner  { background: transparent; }
+
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: rgba(108,99,255,.25) transparent; }
 .nav-section-title { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 2px; padding: 0 12px; margin: 16px 0 6px; }
 .nav-link {
   display: flex; align-items: center; gap: 12px;
@@ -427,7 +449,8 @@ img { max-width: 100%; display: block; }
 /* Wrappers com scroll horizontal — não o .card em si */
 .table-wrap       { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
 .users-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
-.tasks-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+.tasks-table-wrap  { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; }
+.tasks-mobile-list { display: none; }
 /* Quando a tabela é o único filho do card, arredonda os cantos inferiores */
 .card > .users-table-wrap:last-child,
 .card > .tasks-table-wrap:last-child  { border-bottom-left-radius: var(--radius); border-bottom-right-radius: var(--radius); overflow: hidden; }
@@ -1041,65 +1064,222 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 /* ════════════════════════════════════════════════════════
    REPORTS
 ════════════════════════════════════════════════════════ */
-.reports-intro {
-  font-size: 13px; color: var(--text2); background: var(--surface);
-  border: 1px solid var(--border); border-left: 3px solid var(--accent);
-  border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 20px;
-  display: flex; align-items: center; gap: 10px; line-height: 1.5;
-}
-.reports-intro i { color: var(--accent); flex-shrink: 0; }
+/* ══════════════════════════════════════════════════════════════════════════
+   RELATÓRIOS
+══════════════════════════════════════════════════════════════════════════ */
 
-.reports-grid {
+/* Banner informativo */
+.rpt-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+.rpt-banner-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(108,99,255,.12);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.rpt-banner-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+.rpt-banner-sub {
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.5;
+}
+.rpt-banner-sub strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Grid de cards */
+.rpt-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
   gap: 20px;
 }
-.reports-card { overflow: hidden; }
-.reports-card .card-body { padding: 20px 24px 24px; }
 
-/* Cabeçalho colorido do card */
-.reports-card-header {
-  display: flex; align-items: center; gap: 14px;
-  padding: 16px 24px; border-bottom: 1px solid var(--border);
+/* Card base */
+.rpt-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+  transition: box-shadow .2s, transform .2s;
 }
-.reports-card-header.reservas { background: linear-gradient(135deg, rgba(108,99,255,.10) 0%, rgba(108,99,255,.03) 100%); }
-.reports-card-header.tarefas  { background: linear-gradient(135deg, rgba(16,185,129,.10)  0%, rgba(16,185,129,.03)  100%); }
-.reports-card-icon {
-  width: 44px; height: 44px; border-radius: var(--radius-sm);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; flex-shrink: 0;
-  background: rgba(108,99,255,.15); color: var(--accent);
-}
-.reports-card-header.tarefas .reports-card-icon {
-  background: rgba(16,185,129,.15); color: var(--green);
-}
-.reports-card-title { font-weight: 700; font-size: 15px; color: var(--text); }
-.reports-card-desc  { font-size: 12px; color: var(--text2); margin-top: 2px; }
-
-/* Grupos de campos */
-.reports-field-group {
-  border: 1px solid var(--border); border-radius: var(--radius-sm);
-  padding: 12px 14px 6px; margin-bottom: 12px;
-}
-.reports-field-label {
-  font-size: 11px; font-weight: 700; color: var(--text3);
-  text-transform: uppercase; letter-spacing: .5px;
-  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
-}
-.reports-field-label i { font-size: 10px; }
-.reports-form { display: flex; flex-direction: column; gap: 0; }
-.reports-form .form-row { margin-bottom: 0; gap: 10px; }
-.reports-form .form-group { margin-bottom: 8px; }
-.reports-form label { font-size: 11px; }
-
-.btn-report {
-  margin-top: 4px; width: 100%;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  font-size: 14px; padding: 11px;
+.rpt-card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  transform: translateY(-2px);
 }
 
-@media (max-width: 900px) {
-  .reports-grid { grid-template-columns: 1fr; }
+/* Stripe lateral colorida */
+.rpt-card-stripe {
+  width: 4px;
+  flex-shrink: 0;
+}
+.rpt-stripe-equip { background: linear-gradient(180deg, #6c63ff, #9b8fff); }
+.rpt-stripe-lab   { background: linear-gradient(180deg, #6366f1, #a78bfa); }
+.rpt-stripe-task  { background: linear-gradient(180deg, #10b981, #34d399); }
+
+.rpt-card-inner {
+  flex: 1;
+  padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Cabeçalho do card */
+.rpt-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.rpt-card-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.rpt-badge-equip { background: rgba(108,99,255,.15); color: #6c63ff; }
+.rpt-badge-lab   { background: rgba(99,102,241,.15);  color: #6366f1; }
+.rpt-badge-task  { background: rgba(16,185,129,.15);  color: #10b981; }
+
+.rpt-card-meta { flex: 1; min-width: 0; }
+.rpt-card-title {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.3;
+}
+.rpt-card-desc {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+}
+
+/* Tag "PDF" no canto */
+.rpt-card-tag {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+.rpt-tag-equip { background: rgba(108,99,255,.12); color: #6c63ff; border: 1px solid rgba(108,99,255,.25); }
+.rpt-tag-lab   { background: rgba(99,102,241,.12);  color: #6366f1; border: 1px solid rgba(99,102,241,.25); }
+.rpt-tag-task  { background: rgba(16,185,129,.12);  color: #10b981; border: 1px solid rgba(16,185,129,.25); }
+
+/* Label de seção dentro do form */
+.rpt-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.rpt-section-label i { font-size: 9px; }
+
+/* Linha de campos */
+.rpt-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.rpt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.rpt-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+}
+
+/* Input unificado */
+.rpt-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.rpt-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108,99,255,.1);
+}
+.rpt-input option { background: var(--surface); }
+
+/* Botão de geração */
+.rpt-btn {
+  margin-top: auto;
+  padding-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s, transform .1s, box-shadow .15s;
+  margin-top: 18px;
+  letter-spacing: .2px;
+}
+.rpt-btn:hover   { opacity: .9; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+.rpt-btn:active  { transform: translateY(0); }
+.rpt-btn-arrow   { margin-left: auto; font-size: 11px; opacity: .7; }
+
+.rpt-btn-equip { background: linear-gradient(135deg, #6c63ff, #9b8fff); color: #fff; }
+.rpt-btn-lab   { background: linear-gradient(135deg, #6366f1, #a78bfa); color: #fff; }
+.rpt-btn-task  { background: linear-gradient(135deg, #059669, #10b981); color: #fff; }
+
+@media (max-width: 860px) {
+  .rpt-grid { grid-template-columns: 1fr; }
+  .rpt-row  { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .rpt-row { grid-template-columns: 1fr; }
 }
 
 /* ════════════════════════════════════════════════════════
@@ -1211,8 +1391,10 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
   /* Mobile card lists aparecem; tabelas somem */
   .users-table-wrap { display: none; }
   .users-card-list  { display: block; }
-  .tasks-table-wrap { display: none; }
-  .tasks-card-list  { display: block; }
+  .tasks-table-wrap  { display: none !important; }
+  .tasks-mobile-list { display: block !important; }
+  .res-table-wrap    { display: none !important; }
+  .users-card-list   { display: block !important; }
 
   /* Tabela de horários: some, cards aparecem */
   .slots-table-wrap { display: none; }
